@@ -1,0 +1,54 @@
+version: "3.9"
+services:
+  postgresql:
+      container_name: postgres
+      image: postgres:13.4
+      ports:
+        - 5432:5432
+      networks:
+        - cr_stats
+      restart: always
+      volumes:
+        - type: volume
+          source: postgres_data
+          target: /var/lib/postgresql/data
+  backend:
+    build:
+      context: ./backend
+      dockerfile: ./Dockerfile
+    container_name: backend
+    environment:
+      API_KEY: ${API_KEY}
+      DB_HOST: ${DB_HOST}
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - 5000:5000
+    networks:
+      - cr_stats
+    restart: always
+    volumes:
+      - type: bind
+        source: ./backend
+        target: /usr/src
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ./Dockerfile
+    container_name: frontend
+    ports:
+      - 80:80
+    networks:
+      - cr_stats
+    restart: always
+    volumes:
+      - type: bind
+        source: ./frontend
+        target: /usr/src
+networks:
+  cr_stats:
+    driver: bridge
+    name: cr_stats
+volumes:
+  postgres_data:

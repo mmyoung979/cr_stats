@@ -1,0 +1,19 @@
+html, .App {
+  background-color: #282C35;
+}
+
+h1 {
+  color: white;
+}
+
+a {
+  color: #d9d9d9 !important;
+}
+
+hr {
+  border: 1px solid white !important;
+}
+
+.card-img-top {
+  background-color: #495061;
+}
