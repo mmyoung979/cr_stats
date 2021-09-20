@@ -11,7 +11,7 @@ function App() {
         <h1 className="h1 text-center">Clash Royale Stats</h1>
         <p className="text-center text-white">Scroll down to find the most commonly used cards among the top 50 players in Clash Royale.</p>
         <hr />
-        <p className="text-center text-white">Designed by <a href="https://tiktok.com/@matthewmyoung" target="_blank">@matthewmyoung</a> on TikTok</p>
+        <p className="text-center text-white">Designed by <a href="https://tiktok.com/@matthewmyoung" target="_blank" rel="noreferrer">@matthewmyoung</a> on TikTok</p>
         <div className="row">
           <div className="col-lg-6 offset-lg-3 col-sm-12">
             <FetchApi />
