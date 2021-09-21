@@ -46,6 +46,7 @@ services:
     volumes:
       - ./frontend/build:/var/www/html
       - ./server/default.conf:/etc/nginx/sites-available/default
+      - ./server/options-ssl-nginx.conf:/etc/letsencrypt/options-ssl-nginx.conf
 networks:
   cr_stats:
     driver: bridge
