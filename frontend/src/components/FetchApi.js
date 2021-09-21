@@ -19,13 +19,13 @@ export default class FetchApi extends Component {
 
     render() {
         return (
-            <div>
+            <div className="row">
                 {this.state.loading
                     ? <div className="text-center text-white">Loading API data...</div>
                     : this.state.top_cards
                         .sort((a, b) => { return b.count - a.count })
                         .map((card, index) => {
-                            return <div key={card.name}>
+                            return <div key={card.name} className="col-lg-3 col-sm-6 col-sm-offset-3">
                                 <Card icon={card.icon} name={card.name} count={card.count} rank={index + 1} />
                             </div>
                         })
