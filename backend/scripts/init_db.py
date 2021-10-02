@@ -8,7 +8,7 @@ if __name__ == "__main__":
             CREATE TABLE IF NOT EXISTS common_cards (
                 id SERIAL PRIMARY KEY,
                 cards JSON,
-                datetime_pulled timestamp with time zone
+                timestamp timestamp with time zone
             )
             """
             cursor.execute(sql)

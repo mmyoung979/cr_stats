@@ -22,7 +22,7 @@ class MostCommonCards(Resource):
                 sql = """
                 SELECT cards
                 FROM common_cards
-                ORDER BY datetime_pulled DESC
+                ORDER BY timestamp DESC
                 LIMIT 1
                 """
                 cursor.execute(sql)

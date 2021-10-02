@@ -94,7 +94,7 @@ if __name__ == "__main__":
             sql = f"""
             INSERT INTO common_cards(
                 cards,
-                datetime_pulled
+                timestamp
             )
             VALUES(
                 '{data}',
