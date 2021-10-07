@@ -1,36 +1,56 @@
-import React, { Component } from 'react';
-import Card from './Card';
+import React from "react";
+import Card from "./Card";
 
-export default class FetchApi extends Component {
-    state = {
-        loading: true,
-        top_cards: null,
+const FetchApi = () => {
+  const [state, setState] = React.useState({
+    loading: true,
+    top_cards: null,
+  });
+
+  React.useEffect(() => {
+    const loadData = async () => {
+      const url = `${window.location.href}/api`;
+      const response = await fetch(url);
+      const data = await response.json();
+
+      setState({
+        loading: false,
+        top_cards: data,
+      });
     };
 
-    async componentDidMount() {
-        const url = "http://localhost:5000/";
-        const response = await fetch(url);
-        const data = await response.json()
-        this.setState({
-            loading: false,
-            top_cards: data
-        });
+    if (state.loading) {
+      loadData();
     }
+  }, [state.loading]);
 
-    render() {
-        return (
-            <div className="row">
-                {this.state.loading
-                    ? <div className="text-center text-white">Loading API data...</div>
-                    : this.state.top_cards
-                        .sort((a, b) => { return b.count - a.count })
-                        .map((card, index) => {
-                            return <div key={card.name} className="col-lg-3 col-sm-6 col-sm-offset-3">
-                                <Card icon={card.icon} name={card.name} count={card.count} rank={index + 1} />
-                            </div>
-                        })
-                }
-            </div>
-        )
-    }
-}
+  return (
+    <div className="row">
+      {state.loading ? (
+        <div className="text-center text-white">Loading API data...</div>
+      ) : (
+        state.top_cards
+          .sort((a, b) => {
+            return b.count - a.count;
+          })
+          .map((card, index) => {
+            return (
+              <div
+                key={card.name}
+                className="col-lg-3 col-sm-6 col-sm-offset-3"
+              >
+                <Card
+                  icon={card.icon}
+                  name={card.name}
+                  count={card.count}
+                  rank={index + 1}
+                />
+              </div>
+            );
+          })
+      )}
+    </div>
+  );
+};
+
+export default FetchApi;
