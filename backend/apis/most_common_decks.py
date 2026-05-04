@@ -3,13 +3,13 @@ from apis.utils.db_utils import make_connection
 from flask_restful import Resource
 
 
-class MostCommonCards(Resource):
+class MostCommonDecks(Resource):
     def get(self):
         with make_connection() as connection:
             with connection.cursor() as cursor:
                 sql = """
-                SELECT cards
-                FROM common_cards
+                SELECT decks
+                FROM common_decks
                 ORDER BY timestamp DESC
                 LIMIT 1
                 """

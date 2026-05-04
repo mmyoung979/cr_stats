@@ -9,7 +9,12 @@ if __name__ == "__main__":
                 id SERIAL PRIMARY KEY,
                 cards JSON,
                 timestamp timestamp with time zone
-            )
+            );
+            CREATE TABLE IF NOT EXISTS common_decks (
+                id SERIAL PRIMARY KEY,
+                decks JSON,
+                timestamp timestamp with time zone
+            );
             """
             cursor.execute(sql)
             connection.commit()
