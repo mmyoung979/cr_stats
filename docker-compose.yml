@@ -1,56 +1,59 @@
-version: "3.9"
 services:
-  backend:
-    build:
-      context: ./backend
-      dockerfile: ./Dockerfile
-    container_name: backend
-    environment:
-      API_KEY: ${API_KEY}
-      DB_HOST: ${DB_HOST}
-      DB_NAME: ${DB_NAME}
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
-    networks:
-      - cr_stats
-    ports:
-      - 5000:5000
-    restart: always
-    volumes:
-      - type: bind
-        source: ./backend
-        target: /usr/src
-  postgresql:
-    container_name: postgres
-    environment:
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-    image: postgres:13.4
-    networks:
-      - cr_stats
-    ports:
-      - 5432:5432
-    restart: always
-    volumes:
-      - type: volume
-        source: postgres_data
-        target: /var/lib/postgresql/data
-  server:
-    build:
-      context: ./server
-      dockerfile: ./Dockerfile
-    container_name: server
-    networks:
-      - cr_stats
-    ports:
-      - 80:80
-      - 443:443
-    restart: always
-    volumes:
-      - ./frontend/build:/var/www/html
-      - ./server/default.conf:/etc/nginx/sites-available/default
+    backend:
+        build:
+            context: ./backend
+            dockerfile: ./Dockerfile
+        container_name: backend
+        depends_on:
+            - postgres
+        environment:
+            API_KEY: ${API_KEY}
+            DB_HOST: ${DB_HOST}
+            DB_NAME: ${DB_NAME}
+            DB_USER: ${DB_USER}
+            DB_PASSWORD: ${DB_PASSWORD}
+        networks:
+            - cr_stats
+        ports:
+            - 5001:5001
+        restart: always
+        volumes:
+            - type: bind
+              source: ./backend
+              target: /usr/src
+    postgres:
+        container_name: postgres
+        environment:
+            POSTGRES_PASSWORD: ${DB_PASSWORD}
+        image: postgres:17.5
+        networks:
+            - cr_stats
+        ports:
+            - 5432:5432
+        restart: always
+        volumes:
+            - type: volume
+              source: postgres_data
+              target: /var/lib/postgresql/data
+    server:
+        build:
+            context: ./server
+            dockerfile: ./Dockerfile
+        container_name: server
+        depends_on:
+            - backend
+        networks:
+            - cr_stats
+        ports:
+            - 80:80
+            - 443:443
+        restart: always
+        volumes:
+            - ./frontend/build:/var/www/html
+            - ./server/default.conf:/etc/nginx/sites-available/default
 networks:
-  cr_stats:
-    driver: bridge
-    name: cr_stats
+    cr_stats:
+        driver: bridge
+        name: cr_stats
 volumes:
-  postgres_data:
+    postgres_data:

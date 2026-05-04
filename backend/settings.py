@@ -1,12 +1,16 @@
 """
 Variables & configurations that can be accessed throughout the microservice
 """
+
 # Python imports
 import os
 
 # Third party imports
-from psycopg2 import connect
+from dotenv import load_dotenv
 from pytz import timezone
+
+env_file_path: str = str(os.path.join(os.path.dirname(__file__), "..", ".env"))
+load_dotenv(env_file_path)
 
 API_KEY = os.environ.get("API_KEY")
 API_URL = "https://api.clashroyale.com/v1"
