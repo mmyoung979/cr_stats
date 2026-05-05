@@ -11,12 +11,6 @@ export default class App extends Component {
             <div className="App">
                 <Header />
                 <div className="container mt-3">
-                    <h1 className="h1 text-center">Clash Royale Stats</h1>
-                    <p className="text-center text-white">
-                        Scroll down to find the most commonly used cards among
-                        the top 50 players in Clash Royale.
-                    </p>
-                    <hr />
                     <p className="text-center text-white">
                         Created by{" "}
                         <a
@@ -28,6 +22,7 @@ export default class App extends Component {
                         </a>{" "}
                         on TikTok
                     </p>
+                    <hr />
                     {this.props.component &&
                         React.createElement(this.props.component)}
                 </div>
