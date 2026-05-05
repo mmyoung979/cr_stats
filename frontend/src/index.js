@@ -6,6 +6,7 @@ import App from "./App";
 import reportWebVitals from "./reportWebVitals";
 import TopCards from "./components/TopCards";
 import TopDecks from "./components/TopDecks";
+import Battles from "./components/Battles";
 
 const root = document.getElementById("root");
 
@@ -15,6 +16,7 @@ ReactDOM.createRoot(root).render(
             <Routes>
                 <Route index element={<App component={TopCards} />} />
                 <Route path="decks" element={<App component={TopDecks} />} />
+                <Route path="battles" element={<App component={Battles} />} />
             </Routes>
         </BrowserRouter>
     </React.StrictMode>
