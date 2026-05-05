@@ -37,33 +37,45 @@ export default class Battles extends Component {
         );
     }
 
+    renderPlayerHeader(name, tag, won, align) {
+        return (
+            <div className={`d-flex align-items-baseline mb-2 ${align === "right" ? "justify-content-end" : ""}`}>
+                {align === "right" && won && (
+                    <span className="badge bg-primary me-2">Victory</span>
+                )}
+                <div className={align === "right" ? "text-end" : ""}>
+                    <div className="fw-bold">{name}</div>
+                    <div className="small text-muted">{tag}</div>
+                </div>
+                {align === "left" && won && (
+                    <span className="badge bg-primary ms-2">Victory</span>
+                )}
+            </div>
+        );
+    }
+
     renderBattle(b, idx) {
         const teamWins = b.team_crowns > b.opp_crowns;
         const oppWins = b.opp_crowns > b.team_crowns;
         const draw = !teamWins && !oppWins;
         const when = new Date(b.battle_time).toUTCString();
         return (
-            <div key={`${b.battle_time}-${b.team_tag}`} className="battle-section mb-4 text-white">
-                <div className="battle-title mb-2">
-                    Battle #{idx + 1} &mdash; {when}
-                </div>
-                <div className="battle-header mb-2">
-                    <span>
-                        {b.team_name} ({b.team_tag}){teamWins ? " — WINNER" : ""}
-                    </span>
-                    <span className="mx-3">
-                        {b.team_crowns} – {b.opp_crowns}
-                        {draw ? " (Draw)" : ""}
-                    </span>
-                    <span>
-                        {b.opp_name} ({b.opp_tag}){oppWins ? " — WINNER" : ""}
-                    </span>
-                </div>
-                <div className="row gx-5">
-                    <div className="col-md-6 border-end border-secondary pe-md-4">
+            <div key={`${b.battle_time}-${b.team_tag}`} className="battle-section mb-5 text-white">
+                <div className="row align-items-start">
+                    <div className="col-md-5">
+                        {this.renderPlayerHeader(b.team_name, b.team_tag, teamWins, "left")}
                         {this.renderDeck(b.team_deck)}
                     </div>
-                    <div className="col-md-6 ps-md-4">
+                    <div className="col-md-2 text-center">
+                        <div className="small text-muted">Battle #{idx + 1}</div>
+                        <div className="small text-muted mb-2">{when}</div>
+                        <div className="fs-4 fw-bold">
+                            {b.team_crowns} &ndash; {b.opp_crowns}
+                        </div>
+                        {draw && <div className="small text-muted">Draw</div>}
+                    </div>
+                    <div className="col-md-5">
+                        {this.renderPlayerHeader(b.opp_name, b.opp_tag, oppWins, "right")}
                         {this.renderDeck(b.opp_deck)}
                     </div>
                 </div>
