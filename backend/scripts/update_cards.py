@@ -19,7 +19,7 @@ from settings import TZ
 BATTLE_INSERT_SQL = """
 INSERT INTO recent_battles (
     battle_time, team_tag, team_name, team_rank, team_deck, team_crowns,
-    opp_tag, opp_name, opp_deck, opp_crowns, fetched_at
+    opp_tag, opp_name, opp_rank, opp_deck, opp_crowns, fetched_at
 ) VALUES %s
 ON CONFLICT (battle_time, team_tag) DO NOTHING
 """
@@ -68,6 +68,7 @@ def update_common_cards_and_decks(player_count: int = 50):
                         r["team_crowns"],
                         r["opp_tag"],
                         r["opp_name"],
+                        r["opp_rank"],
                         Json(r["opp_deck"]),
                         r["opp_crowns"],
                         r["fetched_at"],

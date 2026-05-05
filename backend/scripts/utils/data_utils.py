@@ -33,7 +33,7 @@ def get_latest_season():
 
 
 def get_top_players(season):
-    url = API_URL + f"/locations/global/pathoflegend/{season}/rankings/players"
+    url = API_URL + f"/locations/global/pathoflegend/{season}/rankings/players?limit=1000"
     data = get_data(url)
     return [(player["tag"], player["rank"]) for player in data["items"]]
 
@@ -57,14 +57,17 @@ def async_requests(urls):
 def get_battlelog_data(player_count):
     """Returns (battlelogs, rank_by_tag).
 
-    rank_by_tag maps a player tag to their path-of-legend rank at fetch time
-    (only populated for the top `player_count` players).
+    rank_by_tag covers the full path-of-legend ranking returned by the API
+    (up to ~1000 players) so it can be used as a fallback rank lookup for
+    both team and opponent tags. Battlelogs are only fetched for the top
+    `player_count`.
     """
     season = get_latest_season()
-    players = get_top_players(season)[:player_count]
-    rank_by_tag = {tag: rank for tag, rank in players}
+    all_players = get_top_players(season)
+    rank_by_tag = {tag: rank for tag, rank in all_players}
 
-    urls = [get_player_battlelog_url(tag) for tag, _ in players]
+    top_n = all_players[:player_count]
+    urls = [get_player_battlelog_url(tag) for tag, _ in top_n]
     battlelogs = async_requests(urls)
     return battlelogs, rank_by_tag
 
@@ -179,6 +182,11 @@ def _parse_battle_time(raw: str) -> datetime:
     return datetime.strptime(raw, "%Y%m%dT%H%M%S.%fZ").replace(tzinfo=timezone.utc)
 
 
+def _resolve_rank(side, rank_by_tag):
+    """Prefer the per-battle globalRank, fall back to the seasonal PoL ranking."""
+    return side.get("globalRank") or rank_by_tag.get(side.get("tag"))
+
+
 def get_battle_rows(battlelog_data, rank_by_tag=None):
     """Flatten battlelogs into one row per pathOfLegend battle.
 
@@ -198,16 +206,16 @@ def get_battle_rows(battlelog_data, rank_by_tag=None):
             if not team or not opp:
                 continue
             try:
-                team_tag = team[0]["tag"]
                 rows.append({
                     "battle_time": _parse_battle_time(battle["battleTime"]),
-                    "team_tag": team_tag,
-                    "team_rank": rank_by_tag.get(team_tag),
+                    "team_tag": team[0]["tag"],
+                    "team_rank": _resolve_rank(team[0], rank_by_tag),
                     "team_name": team[0].get("name"),
                     "team_deck": _battle_deck(team[0]),
                     "team_crowns": team[0].get("crowns"),
                     "opp_tag": opp[0].get("tag"),
                     "opp_name": opp[0].get("name"),
+                    "opp_rank": _resolve_rank(opp[0], rank_by_tag),
                     "opp_deck": _battle_deck(opp[0]),
                     "opp_crowns": opp[0].get("crowns"),
                     "fetched_at": fetched_at,
