@@ -37,7 +37,7 @@ export default class Battles extends Component {
         );
     }
 
-    renderPlayerHeader(name, tag, won, align) {
+    renderPlayerHeader(name, tag, rank, won, align) {
         return (
             <div className={`d-flex align-items-baseline mb-2 ${align === "right" ? "justify-content-end" : ""}`}>
                 {align === "right" && won && (
@@ -45,6 +45,7 @@ export default class Battles extends Component {
                 )}
                 <div className={align === "right" ? "text-end" : ""}>
                     <div className="fw-bold">{name}</div>
+                    {rank && <div className="small text-muted">Rank #{rank}</div>}
                     <div className="small text-muted">{tag}</div>
                 </div>
                 {align === "left" && won && (
@@ -57,8 +58,8 @@ export default class Battles extends Component {
     renderBattle(b) {
         const oppWins = b.opp_crowns > b.team_crowns;
         const draw = b.team_crowns === b.opp_crowns;
-        const team = { name: b.team_name, tag: b.team_tag, deck: b.team_deck, crowns: b.team_crowns };
-        const opp = { name: b.opp_name, tag: b.opp_tag, deck: b.opp_deck, crowns: b.opp_crowns };
+        const team = { name: b.team_name, tag: b.team_tag, rank: b.team_rank, deck: b.team_deck, crowns: b.team_crowns };
+        const opp = { name: b.opp_name, tag: b.opp_tag, rank: null, deck: b.opp_deck, crowns: b.opp_crowns };
         const left = oppWins ? opp : team;
         const right = oppWins ? team : opp;
         const totalMin = Math.max(0, Math.floor((Date.now() - new Date(b.battle_time).getTime()) / 60000));
@@ -69,7 +70,7 @@ export default class Battles extends Component {
             <div key={`${b.battle_time}-${b.team_tag}`} className="battle-section mb-5 text-white">
                 <div className="row align-items-start">
                     <div className="col-md-5">
-                        {this.renderPlayerHeader(left.name, left.tag, !draw, "left")}
+                        {this.renderPlayerHeader(left.name, left.tag, left.rank, !draw, "left")}
                         {this.renderDeck(left.deck)}
                     </div>
                     <div className="col-md-2 text-center">
@@ -80,7 +81,7 @@ export default class Battles extends Component {
                         {draw && <div className="small text-muted">Draw</div>}
                     </div>
                     <div className="col-md-5">
-                        {this.renderPlayerHeader(right.name, right.tag, false, "right")}
+                        {this.renderPlayerHeader(right.name, right.tag, right.rank, false, "right")}
                         {this.renderDeck(right.deck)}
                     </div>
                 </div>
