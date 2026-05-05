@@ -18,7 +18,7 @@ from settings import TZ
 
 BATTLE_INSERT_SQL = """
 INSERT INTO recent_battles (
-    battle_time, team_tag, team_name, team_deck, team_crowns,
+    battle_time, team_tag, team_name, team_rank, team_deck, team_crowns,
     opp_tag, opp_name, opp_deck, opp_crowns, fetched_at
 ) VALUES %s
 ON CONFLICT (battle_time, team_tag) DO NOTHING
@@ -30,10 +30,10 @@ def update_common_cards_and_decks(player_count: int = 50):
     Fetches battle log data, processes it to get common cards, common decks,
     and recent battles, and updates the database with the latest data.
     """
-    battlelog_data = get_battlelog_data(player_count)
+    battlelog_data, rank_by_tag = get_battlelog_data(player_count)
     card_data = json.dumps(get_card_data(battlelog_data), indent=2)
     deck_data = json.dumps(get_deck_data(battlelog_data), indent=2)
-    battle_rows = get_battle_rows(battlelog_data)
+    battle_rows = get_battle_rows(battlelog_data, rank_by_tag)
 
     with make_connection() as connection:
         with connection.cursor() as cursor:
@@ -63,6 +63,7 @@ def update_common_cards_and_decks(player_count: int = 50):
                         r["battle_time"],
                         r["team_tag"],
                         r["team_name"],
+                        r["team_rank"],
                         Json(r["team_deck"]),
                         r["team_crowns"],
                         r["opp_tag"],

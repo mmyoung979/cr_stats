@@ -9,7 +9,7 @@ class RecentBattles(Resource):
             with connection.cursor() as cursor:
                 cursor.execute(
                     """
-                    SELECT battle_time, team_name, team_tag, team_deck, team_crowns,
+                    SELECT battle_time, team_name, team_tag, team_rank, team_deck, team_crowns,
                            opp_name, opp_tag, opp_deck, opp_crowns
                     FROM recent_battles
                     ORDER BY battle_time DESC
@@ -22,6 +22,7 @@ class RecentBattles(Resource):
                 "battle_time": battle_time.isoformat(),
                 "team_name": team_name,
                 "team_tag": team_tag,
+                "team_rank": team_rank,
                 "team_deck": team_deck,
                 "team_crowns": team_crowns,
                 "opp_name": opp_name,
@@ -33,6 +34,7 @@ class RecentBattles(Resource):
                 battle_time,
                 team_name,
                 team_tag,
+                team_rank,
                 team_deck,
                 team_crowns,
                 opp_name,

@@ -14,7 +14,7 @@ from scripts.utils.data_utils import (
 
 if __name__ == "__main__":
     player_count: int = 50
-    battlelog_data = get_battlelog_data(player_count)
+    battlelog_data, rank_by_tag = get_battlelog_data(player_count)
 
     # card_data = json.dumps(get_card_data(battlelog_data), indent=2)
     # print(card_data)
@@ -22,7 +22,7 @@ if __name__ == "__main__":
     # deck_data = json.dumps(get_deck_data(battlelog_data), indent=2)
     # print(deck_data)
 
-    rows = get_battle_rows(battlelog_data)
+    rows = get_battle_rows(battlelog_data, rank_by_tag)
     print(f"battle_rows count: {len(rows)}")
     print("--- first 2 rows ---")
 
