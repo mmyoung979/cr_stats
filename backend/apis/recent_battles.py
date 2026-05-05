@@ -10,7 +10,7 @@ class RecentBattles(Resource):
                 cursor.execute(
                     """
                     SELECT battle_time, team_name, team_tag, team_rank, team_deck, team_crowns,
-                           opp_name, opp_tag, opp_deck, opp_crowns
+                           opp_name, opp_tag, opp_rank, opp_deck, opp_crowns
                     FROM recent_battles
                     ORDER BY battle_time DESC
                     LIMIT 10
@@ -27,6 +27,7 @@ class RecentBattles(Resource):
                 "team_crowns": team_crowns,
                 "opp_name": opp_name,
                 "opp_tag": opp_tag,
+                "opp_rank": opp_rank,
                 "opp_deck": opp_deck,
                 "opp_crowns": opp_crowns,
             }
@@ -39,6 +40,7 @@ class RecentBattles(Resource):
                 team_crowns,
                 opp_name,
                 opp_tag,
+                opp_rank,
                 opp_deck,
                 opp_crowns,
             ) in rows

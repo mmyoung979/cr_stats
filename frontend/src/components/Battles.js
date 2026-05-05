@@ -59,7 +59,7 @@ export default class Battles extends Component {
         const oppWins = b.opp_crowns > b.team_crowns;
         const draw = b.team_crowns === b.opp_crowns;
         const team = { name: b.team_name, tag: b.team_tag, rank: b.team_rank, deck: b.team_deck, crowns: b.team_crowns };
-        const opp = { name: b.opp_name, tag: b.opp_tag, rank: null, deck: b.opp_deck, crowns: b.opp_crowns };
+        const opp = { name: b.opp_name, tag: b.opp_tag, rank: b.opp_rank, deck: b.opp_deck, crowns: b.opp_crowns };
         const left = oppWins ? opp : team;
         const right = oppWins ? team : opp;
         const totalMin = Math.max(0, Math.floor((Date.now() - new Date(b.battle_time).getTime()) / 60000));

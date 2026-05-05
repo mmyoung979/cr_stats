@@ -24,12 +24,14 @@ if __name__ == "__main__":
                 team_crowns  INT,
                 opp_tag      TEXT,
                 opp_name     TEXT,
+                opp_rank     INT,
                 opp_deck     JSON NOT NULL,
                 opp_crowns   INT,
                 fetched_at   TIMESTAMP WITH TIME ZONE NOT NULL,
                 PRIMARY KEY (battle_time, team_tag)
             );
             ALTER TABLE recent_battles ADD COLUMN IF NOT EXISTS team_rank INT;
+            ALTER TABLE recent_battles ADD COLUMN IF NOT EXISTS opp_rank INT;
             CREATE INDEX IF NOT EXISTS recent_battles_battle_time_idx
                 ON recent_battles (battle_time DESC);
             """
