@@ -59,9 +59,13 @@ export default class Battles extends Component {
                         {b.opp_name} ({b.opp_tag}){oppWins ? " — WINNER" : ""}
                     </span>
                 </div>
-                <div className="row">
-                    <div className="col-md-6">{this.renderDeck(b.team_deck)}</div>
-                    <div className="col-md-6">{this.renderDeck(b.opp_deck)}</div>
+                <div className="row gx-5">
+                    <div className="col-md-6 border-end border-secondary pe-md-4">
+                        {this.renderDeck(b.team_deck)}
+                    </div>
+                    <div className="col-md-6 ps-md-4">
+                        {this.renderDeck(b.opp_deck)}
+                    </div>
                 </div>
                 <hr />
             </div>
