@@ -55,28 +55,31 @@ export default class Battles extends Component {
     }
 
     renderBattle(b, idx) {
-        const teamWins = b.team_crowns > b.opp_crowns;
         const oppWins = b.opp_crowns > b.team_crowns;
-        const draw = !teamWins && !oppWins;
+        const draw = b.team_crowns === b.opp_crowns;
+        const team = { name: b.team_name, tag: b.team_tag, deck: b.team_deck, crowns: b.team_crowns };
+        const opp = { name: b.opp_name, tag: b.opp_tag, deck: b.opp_deck, crowns: b.opp_crowns };
+        const left = oppWins ? opp : team;
+        const right = oppWins ? team : opp;
         const when = new Date(b.battle_time).toUTCString();
         return (
             <div key={`${b.battle_time}-${b.team_tag}`} className="battle-section mb-5 text-white">
                 <div className="row align-items-start">
                     <div className="col-md-5">
-                        {this.renderPlayerHeader(b.team_name, b.team_tag, teamWins, "left")}
-                        {this.renderDeck(b.team_deck)}
+                        {this.renderPlayerHeader(left.name, left.tag, !draw, "left")}
+                        {this.renderDeck(left.deck)}
                     </div>
                     <div className="col-md-2 text-center">
                         <div className="small text-muted">Battle #{idx + 1}</div>
                         <div className="small text-muted mb-2">{when}</div>
                         <div className="fs-4 fw-bold">
-                            {b.team_crowns} &ndash; {b.opp_crowns}
+                            {left.crowns} &ndash; {right.crowns}
                         </div>
                         {draw && <div className="small text-muted">Draw</div>}
                     </div>
                     <div className="col-md-5">
-                        {this.renderPlayerHeader(b.opp_name, b.opp_tag, oppWins, "right")}
-                        {this.renderDeck(b.opp_deck)}
+                        {this.renderPlayerHeader(right.name, right.tag, false, "right")}
+                        {this.renderDeck(right.deck)}
                     </div>
                 </div>
                 <hr />
