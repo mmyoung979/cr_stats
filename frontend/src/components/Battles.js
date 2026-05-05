@@ -28,8 +28,10 @@ export default class Battles extends Component {
                             name={card.name}
                             icon={card.icon}
                             evolvedIcon={card.evolvedIcon}
+                            heroIcon={card.heroIcon}
                             hasEvolution={card.hasEvolution}
-                            isEvolutionSlot={idx < 2}
+                            hasHero={card.hasHero}
+                            isSpecialSlot={idx < 2}
                         />
                     </div>
                 ))}

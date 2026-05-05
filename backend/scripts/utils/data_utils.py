@@ -170,9 +170,11 @@ def _battle_deck(side: dict) -> list[dict]:
     return [
         {
             NAME: card[NAME],
-            "hasEvolution": card.get("maxEvolutionLevel") is not None,
+            "hasEvolution": card["iconUrls"].get("evolutionMedium") is not None,
+            "hasHero": card["iconUrls"].get("heroMedium") is not None,
             "icon": card["iconUrls"]["medium"],
             "evolvedIcon": card["iconUrls"].get("evolutionMedium"),
+            "heroIcon": card["iconUrls"].get("heroMedium"),
         }
         for card in side[CARDS]
     ]
