@@ -2,7 +2,7 @@
 import concurrent.futures
 import hashlib
 import os
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from urllib.parse import quote_plus
 
 # Third party imports
@@ -22,14 +22,15 @@ def get_data(url):
     return requests.get(url, headers=HEADERS).json()
 
 
-def get_seasons():
-    url = API_URL + "/locations/global/seasons"
-    return get_data(url)
-
-
 def get_latest_season():
-    seasons = get_seasons()
-    return seasons["items"][-1]["id"]
+    """The CR API only publishes finalized PoL rankings for completed months
+    (current month returns 404, and the /seasons listing endpoint returns
+    items with null ids). Returns the YYYY-MM ID of the previous calendar
+    month, which is the most recent queryable season."""
+    today = date.today()
+    if today.month == 1:
+        return f"{today.year - 1}-12"
+    return f"{today.year}-{today.month - 1:02d}"
 
 
 def get_top_players(season):
