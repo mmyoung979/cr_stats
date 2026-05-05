@@ -140,27 +140,42 @@ def get_card_data(battlelog_data):
         # Parse card data
         for idx, card in enumerate(deck):
             name: str = card[NAME]
-            if name not in card_data:
-                card_data[name] = {
-                    COUNT: 0,
-                    "evolutionCount": 0,
-                    "hasEvolution": card.get("maxEvolutionLevel") is not None,
-                    "icon": card["iconUrls"]["medium"],
-                    "evolvedIcon": card["iconUrls"].get("evolutionMedium", None),
-                }
+            icons = card.get("iconUrls", {})
+            ev_icon = icons.get("evolutionMedium")
+            hero_icon = icons.get("heroMedium")
 
-            card_data[name][COUNT] += 1
-            if idx < 2 and card.get("maxEvolutionLevel") is not None:
-                card_data[name]["evolutionCount"] += 1
+            entry = card_data.setdefault(name, {
+                COUNT: 0,
+                "evolutionCount": 0,
+                "heroCount": 0,
+                "icon": icons.get("medium"),
+                "evolvedIcon": None,
+                "heroIcon": None,
+            })
+            # Capture variant icons whenever we see them — don't lock to first-seen.
+            if ev_icon and not entry["evolvedIcon"]:
+                entry["evolvedIcon"] = ev_icon
+            if hero_icon and not entry["heroIcon"]:
+                entry["heroIcon"] = hero_icon
+
+            entry[COUNT] += 1
+            if idx < 2:
+                if hero_icon:
+                    entry["heroCount"] += 1
+                elif ev_icon:
+                    entry["evolutionCount"] += 1
 
     return [
         {
             NAME: name,
             COUNT: data[COUNT],
             "evolutionCount": data["evolutionCount"],
-            "hasEvolution": data["hasEvolution"],
+            "heroCount": data["heroCount"],
+            "hasEvolution": data["evolvedIcon"] is not None,
+            "hasHero": data["heroIcon"] is not None,
             "icon": data["icon"],
-            "evolvedIcon": data.get("evolvedIcon"),
+            "evolvedIcon": data["evolvedIcon"],
+            "heroIcon": data["heroIcon"],
         }
         for name, data in card_data.items()
     ]

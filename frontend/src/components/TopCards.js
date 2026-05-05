@@ -36,10 +36,13 @@ export default class TopCards extends Component {
                                     <Card
                                         icon={card.icon}
                                         evolvedIcon={card.evolvedIcon}
+                                        heroIcon={card.heroIcon}
                                         name={card.name}
                                         count={card.count}
                                         evolutionCount={card.evolutionCount}
+                                        heroCount={card.heroCount}
                                         hasEvolution={card.hasEvolution}
+                                        hasHero={card.hasHero}
                                         rank={index + 1}
                                     />
                                 </div>
