@@ -54,14 +54,17 @@ export default class Battles extends Component {
         );
     }
 
-    renderBattle(b, idx) {
+    renderBattle(b) {
         const oppWins = b.opp_crowns > b.team_crowns;
         const draw = b.team_crowns === b.opp_crowns;
         const team = { name: b.team_name, tag: b.team_tag, deck: b.team_deck, crowns: b.team_crowns };
         const opp = { name: b.opp_name, tag: b.opp_tag, deck: b.opp_deck, crowns: b.opp_crowns };
         const left = oppWins ? opp : team;
         const right = oppWins ? team : opp;
-        const when = new Date(b.battle_time).toUTCString();
+        const totalMin = Math.max(0, Math.floor((Date.now() - new Date(b.battle_time).getTime()) / 60000));
+        const hours = Math.floor(totalMin / 60);
+        const minutes = totalMin % 60;
+        const when = hours === 0 ? `${minutes}m ago` : `${hours}h ${minutes}m ago`;
         return (
             <div key={`${b.battle_time}-${b.team_tag}`} className="battle-section mb-5 text-white">
                 <div className="row align-items-start">
@@ -70,7 +73,6 @@ export default class Battles extends Component {
                         {this.renderDeck(left.deck)}
                     </div>
                     <div className="col-md-2 text-center">
-                        <div className="small text-muted">Battle #{idx + 1}</div>
                         <div className="small text-muted mb-2">{when}</div>
                         <div className="fs-4 fw-bold">
                             {left.crowns} &ndash; {right.crowns}
@@ -98,6 +100,6 @@ export default class Battles extends Component {
                 </div>
             );
         }
-        return <div>{this.state.battles.map((b, i) => this.renderBattle(b, i))}</div>;
+        return <div>{this.state.battles.map((b) => this.renderBattle(b))}</div>;
     }
 }
