@@ -2,6 +2,7 @@
 import concurrent.futures
 import hashlib
 import os
+from datetime import datetime, timezone
 from urllib.parse import quote_plus
 
 # Third party imports
@@ -158,3 +159,55 @@ def get_card_data(battlelog_data):
         }
         for name, data in card_data.items()
     ]
+
+
+def _battle_deck(side: dict) -> list[dict]:
+    return [
+        {
+            NAME: card[NAME],
+            "hasEvolution": card.get("maxEvolutionLevel") is not None,
+            "icon": card["iconUrls"]["medium"],
+            "evolvedIcon": card["iconUrls"].get("evolutionMedium"),
+        }
+        for card in side[CARDS]
+    ]
+
+
+def _parse_battle_time(raw: str) -> datetime:
+    # Clash Royale format: "20260504T123045.000Z"
+    return datetime.strptime(raw, "%Y%m%dT%H%M%S.%fZ").replace(tzinfo=timezone.utc)
+
+
+def get_battle_rows(battlelog_data):
+    """Flatten battlelogs into one row per pathOfLegend battle.
+
+    Returned dicts match the recent_battles table columns.
+    """
+    fetched_at = datetime.now(timezone.utc)
+    rows = []
+    for battlelog in battlelog_data:
+        if not isinstance(battlelog, list):
+            continue
+        for battle in battlelog:
+            if battle.get("type") != RANKED:
+                continue
+            team = battle.get("team") or []
+            opp = battle.get("opponent") or []
+            if not team or not opp:
+                continue
+            try:
+                rows.append({
+                    "battle_time": _parse_battle_time(battle["battleTime"]),
+                    "team_tag": team[0]["tag"],
+                    "team_name": team[0].get("name"),
+                    "team_deck": _battle_deck(team[0]),
+                    "team_crowns": team[0].get("crowns"),
+                    "opp_tag": opp[0].get("tag"),
+                    "opp_name": opp[0].get("name"),
+                    "opp_deck": _battle_deck(opp[0]),
+                    "opp_crowns": opp[0].get("crowns"),
+                    "fetched_at": fetched_at,
+                })
+            except (KeyError, ValueError):
+                continue
+    return rows
