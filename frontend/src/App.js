@@ -11,18 +11,6 @@ export default class App extends Component {
             <div className="App">
                 <Header />
                 <div className="container mt-3">
-                    <p className="text-center text-white">
-                        Created by{" "}
-                        <a
-                            href="https://tiktok.com/@matthewmyoung"
-                            target="_blank"
-                            rel="noreferrer"
-                        >
-                            @matthewmyoung
-                        </a>{" "}
-                        on TikTok
-                    </p>
-                    <hr />
                     {this.props.component &&
                         React.createElement(this.props.component)}
                 </div>
