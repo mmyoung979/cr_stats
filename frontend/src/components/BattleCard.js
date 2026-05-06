@@ -20,8 +20,6 @@ export default function BattleCard(props) {
                 alt={props.name}
                 loading="lazy"
                 decoding="async"
-                width="285"
-                height="420"
             />
             <div className="card-body p-2">
                 <h6 className="card-title mb-0">{props.name}</h6>
