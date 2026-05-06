@@ -1,6 +1,7 @@
 import React, { Component } from "react";
 import { useParams } from "react-router";
 import Deck from "./Deck";
+import DeckStats from "./DeckStats";
 import { encodePlayerTag } from "../utils/playerTag";
 
 function withParams(Component) {
@@ -90,15 +91,22 @@ class Player extends Component {
                                     · avg level {deck.avg_level}
                                 </span>
                             </div>
-                            {deck.missing_variants.length > 0 && (
-                                <div className="small text-warning mb-2">
-                                    Missing:{" "}
-                                    {deck.missing_variants
-                                        .map((m) => `${m.variant === "hero" ? "hero" : "evo"} ${m.name}`)
-                                        .join(", ")}
+                            <div className="row">
+                                <div className="col-md-9">
+                                    {deck.missing_variants.length > 0 && (
+                                        <div className="small text-warning mb-2">
+                                            Missing:{" "}
+                                            {deck.missing_variants
+                                                .map((m) => `${m.variant === "hero" ? "hero" : "evo"} ${m.name}`)
+                                                .join(", ")}
+                                        </div>
+                                    )}
+                                    <Deck cards={deck.cards} />
                                 </div>
-                            )}
-                            <Deck cards={deck.cards} />
+                                <div className="col-md-3">
+                                    <DeckStats cards={deck.cards} />
+                                </div>
+                            </div>
                             <hr className="mt-4" />
                         </div>
                     ))
