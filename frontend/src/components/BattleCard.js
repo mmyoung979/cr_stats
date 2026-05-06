@@ -18,6 +18,10 @@ export default function BattleCard(props) {
                 src={pickIcon(props)}
                 className="card-img-top py-2"
                 alt={props.name}
+                loading="lazy"
+                decoding="async"
+                width="285"
+                height="420"
             />
             <div className="card-body p-2">
                 <h6 className="card-title mb-0">{props.name}</h6>
