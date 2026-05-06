@@ -26,3 +26,12 @@ ReactDOM.createRoot(root).render(
 // to log results (for example: reportWebVitals(console.log))
 // or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
 reportWebVitals();
+
+// Cache Clash Royale card icons via a tiny service worker.
+if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+        navigator.serviceWorker
+            .register("/sw.js")
+            .catch((err) => console.error("SW registration failed:", err));
+    });
+}
