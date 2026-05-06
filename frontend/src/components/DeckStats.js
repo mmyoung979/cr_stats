@@ -10,7 +10,7 @@ function fourCardCycle(cards) {
     const costs = cards.map((c) => c.elixirCost).filter((x) => typeof x === "number");
     if (costs.length < 4) return null;
     const cheapest = [...costs].sort((a, b) => a - b).slice(0, 4);
-    return cheapest.reduce((a, b) => a + b, 0).toFixed(1);
+    return cheapest.reduce((a, b) => a + b, 0);
 }
 
 export default function DeckStats({ cards }) {
