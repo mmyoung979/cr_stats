@@ -121,6 +121,23 @@ def get_deck_data(battlelog_data):
     ]
 
 
+def _slot_active_variant(slot_idx, hero_icon, ev_icon):
+    """Per-slot rule for which variant is active in this position.
+
+    Slot 0 = evolution slot. Slot 1 = hero slot (evolution allowed as
+    fallback for malformed decks). Slot 2 = hero or evolution choice
+    (defaults to hero when both are unlocked).
+    """
+    if slot_idx == 0:
+        return "evolution" if ev_icon else None
+    if slot_idx in (1, 2):
+        if hero_icon:
+            return "hero"
+        if ev_icon:
+            return "evolution"
+    return None
+
+
 def get_card_data(battlelog_data):
     # Find most commonly used cards among top players
     card_data: dict = {}
@@ -159,11 +176,11 @@ def get_card_data(battlelog_data):
                 entry["heroIcon"] = hero_icon
 
             entry[COUNT] += 1
-            if idx < 2:
-                if hero_icon:
-                    entry["heroCount"] += 1
-                elif ev_icon:
-                    entry["evolutionCount"] += 1
+            variant = _slot_active_variant(idx, hero_icon, ev_icon)
+            if variant == "hero":
+                entry["heroCount"] += 1
+            elif variant == "evolution":
+                entry["evolutionCount"] += 1
 
     return [
         {

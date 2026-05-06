@@ -31,7 +31,7 @@ export default class Battles extends Component {
                             heroIcon={card.heroIcon}
                             hasEvolution={card.hasEvolution}
                             hasHero={card.hasHero}
-                            isSpecialSlot={idx < 2}
+                            slotIndex={idx}
                         />
                     </div>
                 ))}
