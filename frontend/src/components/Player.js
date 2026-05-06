@@ -90,6 +90,14 @@ class Player extends Component {
                                     · avg level {deck.avg_level}
                                 </span>
                             </div>
+                            {deck.missing_variants.length > 0 && (
+                                <div className="small text-warning mb-2">
+                                    Missing:{" "}
+                                    {deck.missing_variants
+                                        .map((m) => `${m.variant === "hero" ? "hero" : "evo"} ${m.name}`)
+                                        .join(", ")}
+                                </div>
+                            )}
                             <Deck cards={deck.cards} />
                             <hr className="mt-4" />
                         </div>
