@@ -100,9 +100,11 @@ def get_deck_data(battlelog_data):
                 CARDS: [
                     {
                         NAME: card[NAME],
-                        "hasEvolution": card.get("maxEvolutionLevel"),
+                        "hasEvolution": card["iconUrls"].get("evolutionMedium") is not None,
+                        "hasHero": card["iconUrls"].get("heroMedium") is not None,
                         "icon": card["iconUrls"]["medium"],
                         "evolvedIcon": card["iconUrls"].get("evolutionMedium"),
+                        "heroIcon": card["iconUrls"].get("heroMedium"),
                     }
                     for card in deck
                 ],

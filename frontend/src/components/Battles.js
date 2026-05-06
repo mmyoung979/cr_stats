@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import BattleCard from "./BattleCard";
+import Deck from "./Deck";
 
 export default class Battles extends Component {
     state = {
@@ -17,26 +17,6 @@ export default class Battles extends Component {
         } catch (err) {
             this.setState({ loading: false, error: err.message });
         }
-    }
-
-    renderDeck(deck) {
-        return (
-            <div className="row">
-                {deck.map((card, idx) => (
-                    <div key={idx} className="col-3">
-                        <BattleCard
-                            name={card.name}
-                            icon={card.icon}
-                            evolvedIcon={card.evolvedIcon}
-                            heroIcon={card.heroIcon}
-                            hasEvolution={card.hasEvolution}
-                            hasHero={card.hasHero}
-                            slotIndex={idx}
-                        />
-                    </div>
-                ))}
-            </div>
-        );
     }
 
     renderPlayerHeader(name, tag, rank, won, align) {
@@ -73,7 +53,7 @@ export default class Battles extends Component {
                 <div className="row align-items-start">
                     <div className="col-md-5">
                         {this.renderPlayerHeader(left.name, left.tag, left.rank, !draw, "left")}
-                        {this.renderDeck(left.deck)}
+                        <Deck cards={left.deck} />
                     </div>
                     <div className="col-md-2 text-center">
                         <div className="small text-muted mb-2">{when}</div>
@@ -84,7 +64,7 @@ export default class Battles extends Component {
                     </div>
                     <div className="col-md-5">
                         {this.renderPlayerHeader(right.name, right.tag, right.rank, false, "right")}
-                        {this.renderDeck(right.deck)}
+                        <Deck cards={right.deck} />
                     </div>
                 </div>
                 <hr />

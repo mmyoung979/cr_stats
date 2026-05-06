@@ -1,4 +1,5 @@
 import React, { Component } from "react";
+import Deck from "./Deck";
 
 export default class TopDecks extends Component {
     state = {
@@ -36,19 +37,7 @@ export default class TopDecks extends Component {
                                 {deck.count === 1 ? "player" : "players"}
                             </span>
                         </div>
-                        <div className="row g-2">
-                            {deck.cards.map((card, ci) => (
-                                <div key={ci} className="col">
-                                    <img
-                                        src={card.icon}
-                                        alt={card.name}
-                                        className="img-fluid"
-                                        loading="lazy"
-                                        decoding="async"
-                                    />
-                                </div>
-                            ))}
-                        </div>
+                        <Deck cards={deck.cards} />
                         <div className="text-muted small mt-2">
                             {deck.players.join(", ")}
                         </div>
