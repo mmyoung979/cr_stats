@@ -16,11 +16,14 @@ export function setPlayerTag(raw) {
         clearPlayerTag();
         return;
     }
-    localStorage.setItem(KEY, `#${stripped}`);
+    const next = `#${stripped}`;
+    if (localStorage.getItem(KEY) === next) return;
+    localStorage.setItem(KEY, next);
     window.dispatchEvent(new Event(EVENT_NAME));
 }
 
 export function clearPlayerTag() {
+    if (localStorage.getItem(KEY) === null) return;
     localStorage.removeItem(KEY);
     window.dispatchEvent(new Event(EVENT_NAME));
 }

@@ -27,7 +27,6 @@ export default class TopDecks extends Component {
         top_decks: null,
         playerData: null,
         playerError: null,
-        playerLoading: false,
         overlayOn: readOverlayPref(getPlayerTag()),
         tag: getPlayerTag(),
     };
@@ -62,10 +61,10 @@ export default class TopDecks extends Component {
         const seq = ++this._fetchSeq;
         const tag = getPlayerTag();
         if (!tag) {
-            this.setState({ playerData: null, playerError: null, playerLoading: false });
+            this.setState({ playerData: null, playerError: null });
             return;
         }
-        this.setState({ playerLoading: true, playerError: null });
+        this.setState({ playerError: null });
         try {
             const res = await fetch(
                 `http://localhost:5001/player/${encodePlayerTag(tag)}`
@@ -75,20 +74,18 @@ export default class TopDecks extends Component {
                 this.setState({
                     playerData: null,
                     playerError: "not_found",
-                    playerLoading: false,
                 });
                 return;
             }
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const playerData = await res.json();
             if (seq !== this._fetchSeq) return;
-            this.setState({ playerData, playerError: null, playerLoading: false });
+            this.setState({ playerData, playerError: null });
         } catch (err) {
             if (seq !== this._fetchSeq) return;
             this.setState({
                 playerData: null,
                 playerError: err.message,
-                playerLoading: false,
             });
         }
     }
