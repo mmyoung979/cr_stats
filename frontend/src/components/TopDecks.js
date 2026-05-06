@@ -20,6 +20,8 @@ function writeOverlayPref(on) {
 }
 
 export default class TopDecks extends Component {
+    _fetchSeq = 0;
+
     state = {
         loading: true,
         top_decks: null,
@@ -57,6 +59,7 @@ export default class TopDecks extends Component {
     }
 
     async fetchPlayer() {
+        const seq = ++this._fetchSeq;
         const tag = getPlayerTag();
         if (!tag) {
             this.setState({ playerData: null, playerError: null, playerLoading: false });
@@ -67,6 +70,7 @@ export default class TopDecks extends Component {
             const res = await fetch(
                 `http://localhost:5001/player/${encodePlayerTag(tag)}`
             );
+            if (seq !== this._fetchSeq) return;
             if (res.status === 404) {
                 this.setState({
                     playerData: null,
@@ -77,8 +81,10 @@ export default class TopDecks extends Component {
             }
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const playerData = await res.json();
+            if (seq !== this._fetchSeq) return;
             this.setState({ playerData, playerError: null, playerLoading: false });
         } catch (err) {
+            if (seq !== this._fetchSeq) return;
             this.setState({
                 playerData: null,
                 playerError: err.message,
