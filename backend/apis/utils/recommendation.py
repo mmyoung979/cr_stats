@@ -9,6 +9,8 @@ def pick_recommended_decks(all_decks, owned_card_names, level_by_name, limit=3):
     playable = []
     for deck in all_decks:
         names = [c["name"] for c in deck["cards"]]
+        if not names:
+            continue
         if not all(n in owned_card_names for n in names):
             continue
         avg_level = sum(level_by_name[n] for n in names) / len(names)

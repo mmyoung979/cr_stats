@@ -78,3 +78,7 @@ class TestPickRecommendedDecks(TestCase):
 
         self.assertEqual(result[0]["players"], ["#FIRST"])
         self.assertEqual(result[1]["players"], ["#SECOND"])
+
+    def test_deck_with_empty_cards_is_skipped(self):
+        empty = {"count": 99, "cards": [], "players": []}
+        self.assertEqual(pick_recommended_decks([empty], {"A"}, {"A": 14}), [])
