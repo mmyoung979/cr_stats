@@ -22,6 +22,11 @@ export default class Card extends Component {
                         alt={name}
                         loading="lazy"
                         decoding="async"
+                        onError={(e) => {
+                            if (e.target.src !== this.props.icon) {
+                                e.target.src = this.props.icon;
+                            }
+                        }}
                     />
                     <span className="badge bg-primary position-absolute top-0 start-0 m-2">
                         #{rank}

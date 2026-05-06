@@ -12,6 +12,11 @@ function pickIcon({ slotIndex, icon, evolvedIcon, heroIcon, hasEvolution, hasHer
 }
 
 export default function BattleCard(props) {
+    const handleError = (e) => {
+        if (e.target.src !== props.icon) {
+            e.target.src = props.icon;
+        }
+    };
     return (
         <img
             src={pickIcon(props)}
@@ -19,6 +24,7 @@ export default function BattleCard(props) {
             className="img-fluid my-2"
             loading="lazy"
             decoding="async"
+            onError={handleError}
         />
     );
 }
