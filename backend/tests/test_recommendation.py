@@ -195,12 +195,16 @@ class TestPickRecommendedDecks(TestCase):
 
     def test_slots_3_through_7_dont_trigger_variant_check(self):
         cards = ["A", "B", "C", "D", "E", "F", "G", "H"]
-        # All slots have hasEvolution=True, but only slot 0 should trigger a check.
-        deck = _deck(cards, count=5, variants=[(True, False)] * 8)
+        # Slots 0-2 have no variants; slots 3-7 have hasEvolution=True but
+        # should NOT trigger an unlock check because variant slots are 0-2 only.
+        deck = _deck(
+            cards,
+            count=5,
+            variants=[(False, False)] * 3 + [(True, False)] * 5,
+        )
         owned = set(cards)
         levels = {n: 14 for n in cards}
-        evos = {n: 0 for n in cards}
-        evos["A"] = 1  # Slot 0 evo unlocked
+        evos = {n: 0 for n in cards}  # Nothing unlocked anywhere
 
         result = pick_recommended_decks([deck], owned, levels, evos, limit=1)
 
