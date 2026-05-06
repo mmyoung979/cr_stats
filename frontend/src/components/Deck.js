@@ -1,4 +1,5 @@
 import React from "react";
+import { activeSlotVariant, isVariantUnlocked } from "../utils/variants";
 
 // Per-slot variant rule:
 // slot 0 = evolution slot, slot 1 = hero (evo as fallback for malformed
@@ -14,13 +15,21 @@ function pickIcon({ slotIndex, icon, evolvedIcon, heroIcon, hasEvolution, hasHer
     return icon;
 }
 
-function ownershipBadge(card, ownership) {
+function ownershipBadge(card, slotIndex, ownership) {
     if (!ownership) return null;
     const info = ownership[card.name];
     if (!info) {
         return (
             <span className="badge bg-danger position-absolute top-0 end-0 m-1">
                 Missing
+            </span>
+        );
+    }
+    const variant = activeSlotVariant(slotIndex, card.hasEvolution, card.hasHero);
+    if (variant && !isVariantUnlocked(info.evolutionLevel, variant)) {
+        return (
+            <span className="badge bg-warning text-dark position-absolute top-0 end-0 m-1">
+                no {variant === "hero" ? "hero" : "evo"}
             </span>
         );
     }
@@ -51,7 +60,7 @@ export default function Deck({ cards, ownership }) {
                             decoding="async"
                             onError={handleError}
                         />
-                        {ownershipBadge(card, ownership)}
+                        {ownershipBadge(card, idx, ownership)}
                     </div>
                 );
             })}
