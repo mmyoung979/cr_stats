@@ -10,6 +10,12 @@ from apis.utils.db_utils import make_connection
 from apis.utils.recommendation import pick_recommended_decks
 from settings import API_URL, HEADERS
 
+# Universal in-game level cap. The CR API's per-card `level` is rarity-scaled
+# (common max 16, rare 14, legendary 8, etc.); the displayed in-game level is
+# `level + (MAX_DISPLAYED_LEVEL - maxLevel)`. Bump this when Supercell raises
+# the cap.
+MAX_DISPLAYED_LEVEL = 16
+
 
 class Player(Resource):
     def get(self, tag):
@@ -33,7 +39,10 @@ class Player(Resource):
 
         cards = player.get("cards", []) or []
         owned_card_names = {c["name"] for c in cards}
-        level_by_name = {c["name"]: c["level"] for c in cards}
+        level_by_name = {
+            c["name"]: c["level"] + (MAX_DISPLAYED_LEVEL - c["maxLevel"])
+            for c in cards
+        }
         evolution_level_by_name = {
             c["name"]: (c.get("evolutionLevel") or 0) for c in cards
         }
