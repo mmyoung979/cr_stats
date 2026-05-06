@@ -14,8 +14,14 @@ export default class Card extends Component {
         }
 
         return (
-            <div className="card my-3">
-                <img src={icon} className="card-img-top py-3" alt={name} />
+            <div className="card h-100 mb-3">
+                <img
+                    src={icon}
+                    className="card-img-top py-3"
+                    alt={name}
+                    loading="lazy"
+                    decoding="async"
+                />
                 <div className="card-body">
                     <h5 className="card-title">
                         {name} (#{rank})
