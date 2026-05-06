@@ -15,16 +15,21 @@ class Player(Resource):
     def get(self, tag):
         # `tag` arrives URL-decoded by Flask (e.g. "#PPJU2YGP0"). The CR API
         # itself wants the leading # encoded as %23, so re-encode here.
-        cr = requests.get(
-            f"{API_URL}/players/{quote_plus(tag)}",
-            headers=HEADERS,
-            timeout=10,
-        )
-        if cr.status_code == 404:
-            return {"error": "player not found"}, 404
-        if cr.status_code != 200:
+        try:
+            cr = requests.get(
+                f"{API_URL}/players/{quote_plus(tag)}",
+                headers=HEADERS,
+                timeout=10,
+            )
+            if cr.status_code == 404:
+                return {"error": "player not found"}, 404
+            if cr.status_code != 200:
+                return {"error": "upstream error"}, 502
+            player = cr.json()
+        except requests.exceptions.RequestException:
             return {"error": "upstream error"}, 502
-        player = cr.json()
+        except ValueError:
+            return {"error": "upstream error"}, 502
 
         cards = player.get("cards", []) or []
         owned_card_names = {c["name"] for c in cards}
