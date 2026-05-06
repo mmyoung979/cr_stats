@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import Deck from "./Deck";
+import DeckStats from "./DeckStats";
 import {
     encodePlayerTag,
     getPlayerTag,
@@ -168,9 +169,16 @@ export default class TopDecks extends Component {
                                 {deck.count === 1 ? "player" : "players"}
                             </span>
                         </div>
-                        <Deck cards={deck.cards} ownership={ownership} />
-                        <div className="text-muted small mt-2">
-                            {deck.players.join(", ")}
+                        <div className="row">
+                            <div className="col-md-9">
+                                <Deck cards={deck.cards} ownership={ownership} />
+                                <div className="text-muted small mt-2">
+                                    {deck.players.join(", ")}
+                                </div>
+                            </div>
+                            <div className="col-md-3">
+                                <DeckStats cards={deck.cards} />
+                            </div>
                         </div>
                         <hr className="mt-4" />
                     </div>
