@@ -34,6 +34,9 @@ class Player(Resource):
         cards = player.get("cards", []) or []
         owned_card_names = {c["name"] for c in cards}
         level_by_name = {c["name"]: c["level"] for c in cards}
+        evolution_level_by_name = {
+            c["name"]: (c.get("evolutionLevel") or 0) for c in cards
+        }
 
         with make_connection() as connection:
             with connection.cursor() as cursor:
@@ -44,7 +47,11 @@ class Player(Resource):
         decks = row[0] if row else []
 
         recommended = pick_recommended_decks(
-            decks, owned_card_names, level_by_name, limit=3
+            decks,
+            owned_card_names,
+            level_by_name,
+            evolution_level_by_name,
+            limit=3,
         )
 
         pol = player.get("currentPathOfLegendSeasonResult") or {}
@@ -56,7 +63,12 @@ class Player(Resource):
                 "pol_rank": pol.get("rank"),
             },
             "cards": [
-                {"name": c["name"], "level": c["level"], "maxLevel": c["maxLevel"]}
+                {
+                    "name": c["name"],
+                    "level": c["level"],
+                    "maxLevel": c["maxLevel"],
+                    "evolutionLevel": c.get("evolutionLevel") or 0,
+                }
                 for c in cards
             ],
             "recommended_decks": recommended,
