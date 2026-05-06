@@ -14,7 +14,7 @@ export default class Card extends Component {
         }
 
         return (
-            <div className="card h-100 mb-3">
+            <div className="card h-100">
                 <img
                     src={icon}
                     className="card-img-top py-3"
@@ -23,9 +23,8 @@ export default class Card extends Component {
                     decoding="async"
                 />
                 <div className="card-body">
-                    <h5 className="card-title">
-                        {name} (#{rank})
-                    </h5>
+                    <div className="text-muted small mb-1">Rank #{rank}</div>
+                    <h5 className="card-title">{name}</h5>
                     <p className="card-text">
                         <b>{count}</b>/100 top players use {name}
                     </p>

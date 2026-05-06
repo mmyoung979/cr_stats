@@ -19,7 +19,7 @@ export default class TopCards extends Component {
 
     render() {
         return (
-            <div className="row">
+            <div className="row gy-4">
                 {this.state.loading ? (
                     <div className="text-center text-white">
                         Loading API data...
