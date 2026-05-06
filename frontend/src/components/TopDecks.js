@@ -102,7 +102,11 @@ export default class TopDecks extends Component {
         if (!playerData) return null;
         const map = {};
         for (const c of playerData.cards) {
-            map[c.name] = { level: c.level, maxLevel: c.maxLevel };
+            map[c.name] = {
+                level: c.level,
+                maxLevel: c.maxLevel,
+                evolutionLevel: c.evolutionLevel,
+            };
         }
         return map;
     }
