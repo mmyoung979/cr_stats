@@ -74,8 +74,7 @@ class Player(Resource):
             "cards": [
                 {
                     "name": c["name"],
-                    "level": c["level"],
-                    "maxLevel": c["maxLevel"],
+                    "level": c["level"] + (MAX_DISPLAYED_LEVEL - c["maxLevel"]),
                     "evolutionLevel": c.get("evolutionLevel") or 0,
                 }
                 for c in cards
