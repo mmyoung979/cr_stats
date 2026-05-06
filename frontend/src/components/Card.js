@@ -15,15 +15,19 @@ export default class Card extends Component {
 
         return (
             <div className="card h-100">
-                <img
-                    src={icon}
-                    className="card-img-top py-3"
-                    alt={name}
-                    loading="lazy"
-                    decoding="async"
-                />
+                <div className="position-relative">
+                    <img
+                        src={icon}
+                        className="card-img-top py-3"
+                        alt={name}
+                        loading="lazy"
+                        decoding="async"
+                    />
+                    <span className="badge bg-primary position-absolute top-0 start-0 m-2">
+                        #{rank}
+                    </span>
+                </div>
                 <div className="card-body">
-                    <div className="text-muted small mb-1">Rank #{rank}</div>
                     <h5 className="card-title">{name}</h5>
                     <p className="card-text">
                         <b>{count}</b>/100 top players use {name}
