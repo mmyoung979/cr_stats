@@ -105,6 +105,7 @@ def get_deck_data(battlelog_data):
                         "icon": card["iconUrls"]["medium"],
                         "evolvedIcon": card["iconUrls"].get("evolutionMedium"),
                         "heroIcon": card["iconUrls"].get("heroMedium"),
+                        "elixirCost": card.get("elixirCost"),
                     }
                     for card in deck
                 ],
@@ -209,6 +210,7 @@ def _battle_deck(side: dict) -> list[dict]:
             "icon": card["iconUrls"]["medium"],
             "evolvedIcon": card["iconUrls"].get("evolutionMedium"),
             "heroIcon": card["iconUrls"].get("heroMedium"),
+            "elixirCost": card.get("elixirCost"),
         }
         for card in side[CARDS]
     ]
