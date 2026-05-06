@@ -1,11 +1,30 @@
 import React, { Component } from "react";
 import { Link, NavLink } from "react-router";
+import PlayerTagInput from "./PlayerTagInput";
+import {
+    encodePlayerTag,
+    getPlayerTag,
+    subscribePlayerTag,
+} from "../utils/playerTag";
 
 const navLinkClass = ({ isActive }) =>
     "nav-link" + (isActive ? " active" : "");
 
 export default class Header extends Component {
+    state = { tag: getPlayerTag() };
+
+    componentDidMount() {
+        this.unsubscribe = subscribePlayerTag(() =>
+            this.setState({ tag: getPlayerTag() })
+        );
+    }
+
+    componentWillUnmount() {
+        if (this.unsubscribe) this.unsubscribe();
+    }
+
     render() {
+        const { tag } = this.state;
         return (
             <header>
                 <link
@@ -31,7 +50,7 @@ export default class Header extends Component {
                             <span className="navbar-toggler-icon"></span>
                         </button>
                         <div className="collapse navbar-collapse" id="cr-navmenu">
-                            <ul className="navbar-nav ms-auto">
+                            <ul className="navbar-nav me-auto">
                                 <li className="nav-item">
                                     <NavLink to="/" end className={navLinkClass}>
                                         Cards
@@ -47,7 +66,20 @@ export default class Header extends Component {
                                         Battles
                                     </NavLink>
                                 </li>
+                                {tag && (
+                                    <li className="nav-item">
+                                        <NavLink
+                                            to={`/player/${encodePlayerTag(tag)}`}
+                                            className={navLinkClass}
+                                        >
+                                            My Profile
+                                        </NavLink>
+                                    </li>
+                                )}
                             </ul>
+                            <div className="d-flex">
+                                <PlayerTagInput />
+                            </div>
                         </div>
                     </div>
                 </nav>
