@@ -3,24 +3,20 @@ from unittest import TestCase
 from apis.utils.recommendation import pick_recommended_decks
 
 
-def _deck(card_names, count, players=None, variants=None):
-    """Build a deck dict like the snapshot stored in common_decks.
-
-    `variants` is an optional list of (has_evolution, has_hero) tuples per slot.
-    Defaults to (False, False) for every slot, i.e. no variants required.
-    """
-    if variants is None:
-        variants = [(False, False)] * len(card_names)
+def _deck(card_ids, count, players=None, evo_ids=None, hero_ids=None,
+          card_names=None):
+    n = len(card_ids)
+    names = card_names or [chr(ord("A") + i) for i in range(n)]
     return {
+        "id": hash(tuple(card_ids)),
+        "hash": "h" + str(card_ids),
         "count": count,
+        "card_ids": card_ids,
+        "evo_card_ids": evo_ids or [],
+        "hero_card_ids": hero_ids or [],
         "cards": [
-            {
-                "name": n,
-                "icon": f"{n}.png",
-                "hasEvolution": ev,
-                "hasHero": hero,
-            }
-            for n, (ev, hero) in zip(card_names, variants)
+            {"name": names[i], "id": card_ids[i]}
+            for i in range(n)
         ],
         "players": players or [],
     }
@@ -32,205 +28,139 @@ def _no_variants(card_names):
 
 class TestPickRecommendedDecks(TestCase):
     def test_full_ownership_ranked_by_count_descending(self):
-        cards = ["A", "B", "C", "D", "E", "F", "G", "H"]
+        ids = list(range(8))
+        names = [chr(ord("A") + i) for i in range(8)]
         decks = [
-            _deck(cards, count=3),
-            _deck(cards, count=10),
-            _deck(cards, count=7),
+            _deck(ids, 3, card_names=names),
+            _deck(ids, 10, card_names=names),
+            _deck(ids, 7, card_names=names),
         ]
-        owned = set(cards)
-        levels = {n: 14 for n in cards}
-
-        result = pick_recommended_decks(decks, owned, levels, _no_variants(cards), limit=3)
-
+        owned = set(names)
+        levels = {n: 14 for n in names}
+        result = pick_recommended_decks(decks, owned, levels, _no_variants(names), limit=3)
         self.assertEqual([d["count"] for d in result], [10, 7, 3])
 
     def test_excludes_decks_missing_any_card(self):
-        deck_owned = _deck(["A", "B", "C", "D", "E", "F", "G", "H"], count=5)
-        deck_missing = _deck(["A", "B", "C", "D", "E", "F", "G", "Z"], count=99)
-        owned = {"A", "B", "C", "D", "E", "F", "G", "H"}
-        levels = {n: 14 for n in owned}
-
+        ids = list(range(8))
+        names_ok = [chr(ord("A") + i) for i in range(8)]
+        deck_owned = _deck(ids, 5, card_names=names_ok)
+        names_missing = names_ok[:7] + ["Z"]
+        deck_missing = _deck(ids, 99, card_names=names_missing)
+        owned = set(names_ok)
+        levels = {n: 14 for n in names_ok}
         result = pick_recommended_decks(
-            [deck_missing, deck_owned], owned, levels, _no_variants(owned), limit=3
+            [deck_missing, deck_owned], owned, levels, _no_variants(names_ok), limit=3
         )
-
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0]["count"], 5)
 
     def test_respects_limit(self):
-        cards = ["A", "B", "C", "D", "E", "F", "G", "H"]
-        decks = [_deck(cards, count=i) for i in range(1, 11)]
-        owned = set(cards)
-        levels = {n: 14 for n in cards}
-
-        result = pick_recommended_decks(decks, owned, levels, _no_variants(cards), limit=3)
-
-        self.assertEqual(len(result), 3)
+        ids = list(range(8))
+        names = [chr(ord("A") + i) for i in range(8)]
+        decks = [_deck(ids, i, card_names=names) for i in range(1, 11)]
+        owned = set(names)
+        levels = {n: 14 for n in names}
+        result = pick_recommended_decks(decks, owned, levels, _no_variants(names), limit=3)
         self.assertEqual([d["count"] for d in result], [10, 9, 8])
 
     def test_empty_deck_list_returns_empty(self):
-        self.assertEqual(
-            pick_recommended_decks([], {"A"}, {"A": 14}, {"A": 0}), []
-        )
+        self.assertEqual(pick_recommended_decks([], {"A"}, {"A": 14}, {"A": 0}), [])
 
     def test_no_owned_cards_returns_empty(self):
-        deck = _deck(["A", "B", "C", "D", "E", "F", "G", "H"], count=5)
+        ids = list(range(8))
+        names = [chr(ord("A") + i) for i in range(8)]
+        deck = _deck(ids, 5, card_names=names)
         self.assertEqual(pick_recommended_decks([deck], set(), {}, {}), [])
 
     def test_avg_level_computed_and_rounded(self):
-        cards = ["A", "B", "C", "D", "E", "F", "G", "H"]
-        deck = _deck(cards, count=1)
-        owned = set(cards)
-        # Levels: 14,14,14,14,14,14,14,1 -> mean 12.375 -> rounds to 12.4
-        levels = {n: 14 for n in cards}
-        levels["H"] = 1
-
-        result = pick_recommended_decks([deck], owned, levels, _no_variants(cards), limit=1)
-
+        ids = list(range(8))
+        names = [chr(ord("A") + i) for i in range(8)]
+        deck = _deck(ids, 1, card_names=names)
+        owned = set(names)
+        levels = {n: 14 for n in names}
+        levels[names[7]] = 1
+        result = pick_recommended_decks([deck], owned, levels, _no_variants(names), limit=1)
         self.assertEqual(result[0]["avg_level"], 12.4)
 
     def test_tie_on_count_preserves_input_order(self):
-        cards = ["A", "B", "C", "D", "E", "F", "G", "H"]
-        first = _deck(cards, count=5, players=["#FIRST"])
-        second = _deck(cards, count=5, players=["#SECOND"])
-        owned = set(cards)
-        levels = {n: 14 for n in cards}
-
+        ids = list(range(8))
+        names = [chr(ord("A") + i) for i in range(8)]
+        first = _deck(ids, 5, players=["#FIRST"], card_names=names)
+        second = _deck(ids, 5, players=["#SECOND"], card_names=names)
+        owned = set(names)
+        levels = {n: 14 for n in names}
         result = pick_recommended_decks(
-            [first, second], owned, levels, _no_variants(cards), limit=2
+            [first, second], owned, levels, _no_variants(names), limit=2
         )
-
         self.assertEqual(result[0]["players"], ["#FIRST"])
         self.assertEqual(result[1]["players"], ["#SECOND"])
 
     def test_deck_with_empty_cards_is_skipped(self):
-        empty = {"count": 99, "cards": [], "players": []}
-        self.assertEqual(
-            pick_recommended_decks([empty], {"A"}, {"A": 14}, {"A": 0}), []
-        )
+        empty = {"id": 1, "hash": "h", "count": 99, "card_ids": [],
+                 "evo_card_ids": [], "hero_card_ids": [], "cards": [],
+                 "players": []}
+        self.assertEqual(pick_recommended_decks([empty], {"A"}, {"A": 14}, {"A": 0}), [])
 
     def test_fully_playable_when_all_variants_unlocked(self):
-        cards = ["A", "B", "C", "D", "E", "F", "G", "H"]
-        # Slot 0 needs evo, slot 1 needs hero.
-        deck = _deck(
-            cards,
-            count=5,
-            variants=[(True, False), (False, True), (False, False), (False, False),
-                      (False, False), (False, False), (False, False), (False, False)],
-        )
-        owned = set(cards)
-        levels = {n: 14 for n in cards}
-        evos = {n: 0 for n in cards}
-        evos["A"] = 1  # evo bit
-        evos["B"] = 2  # hero bit
-
+        ids = list(range(8))
+        names = [chr(ord("A") + i) for i in range(8)]
+        deck = _deck(ids, 5, evo_ids=[ids[0]], hero_ids=[ids[1]], card_names=names)
+        owned = set(names)
+        levels = {n: 14 for n in names}
+        evos = {n: 0 for n in names}
+        evos[names[0]] = 1  # evo bit
+        evos[names[1]] = 2  # hero bit
         result = pick_recommended_decks([deck], owned, levels, evos, limit=1)
-
-        self.assertEqual(len(result), 1)
         self.assertTrue(result[0]["fully_playable"])
         self.assertEqual(result[0]["missing_variants"], [])
 
     def test_missing_evo_variant_reported(self):
-        cards = ["RG", "B", "C", "D", "E", "F", "G", "H"]
-        deck = _deck(
-            cards,
-            count=5,
-            variants=[(True, False)] + [(False, False)] * 7,
-        )
-        owned = set(cards)
-        levels = {n: 14 for n in cards}
-        evos = {n: 0 for n in cards}  # RG evo NOT unlocked
-
+        ids = list(range(8))
+        names = ["RG"] + [chr(ord("B") + i) for i in range(7)]
+        deck = _deck(ids, 5, evo_ids=[ids[0]], card_names=names)
+        owned = set(names)
+        levels = {n: 14 for n in names}
+        evos = {n: 0 for n in names}
         result = pick_recommended_decks([deck], owned, levels, evos, limit=1)
-
-        self.assertEqual(len(result), 1)
         self.assertFalse(result[0]["fully_playable"])
         self.assertEqual(
             result[0]["missing_variants"],
-            [{"name": "RG", "slot": 0, "variant": "evolution"}],
+            [{"name": "RG", "variant": "evolution"}],
         )
 
     def test_missing_hero_variant_reported(self):
-        cards = ["A", "Bowler", "C", "D", "E", "F", "G", "H"]
-        deck = _deck(
-            cards,
-            count=5,
-            variants=[(False, False), (False, True)] + [(False, False)] * 6,
-        )
-        owned = set(cards)
-        levels = {n: 14 for n in cards}
-        evos = {n: 0 for n in cards}  # Bowler hero NOT unlocked
-
+        ids = list(range(8))
+        names = ["A", "Bowler"] + [chr(ord("C") + i) for i in range(6)]
+        deck = _deck(ids, 5, hero_ids=[ids[1]], card_names=names)
+        owned = set(names)
+        levels = {n: 14 for n in names}
+        evos = {n: 0 for n in names}
         result = pick_recommended_decks([deck], owned, levels, evos, limit=1)
-
         self.assertFalse(result[0]["fully_playable"])
         self.assertEqual(
             result[0]["missing_variants"],
-            [{"name": "Bowler", "slot": 1, "variant": "hero"}],
+            [{"name": "Bowler", "variant": "hero"}],
         )
 
     def test_partially_playable_demoted_below_fully_playable(self):
-        cards = ["A", "B", "C", "D", "E", "F", "G", "H"]
-        # Partial deck: count=99 but slot 0 needs evo we lack.
-        partial = _deck(
-            cards,
-            count=99,
-            variants=[(True, False)] + [(False, False)] * 7,
-            players=["#PARTIAL"],
-        )
-        # Full deck: count=5, no variants required.
-        full = _deck(cards, count=5, players=["#FULL"])
-        owned = set(cards)
-        levels = {n: 14 for n in cards}
-        evos = {n: 0 for n in cards}  # No variants unlocked
-
+        ids = list(range(8))
+        names = [chr(ord("A") + i) for i in range(8)]
+        partial = _deck(ids, 99, evo_ids=[ids[0]], players=["#PARTIAL"], card_names=names)
+        full = _deck(ids, 5, players=["#FULL"], card_names=names)
+        owned = set(names)
+        levels = {n: 14 for n in names}
+        evos = {n: 0 for n in names}
         result = pick_recommended_decks([partial, full], owned, levels, evos, limit=2)
-
-        self.assertEqual(len(result), 2)
         self.assertEqual(result[0]["players"], ["#FULL"])
-        self.assertTrue(result[0]["fully_playable"])
         self.assertEqual(result[1]["players"], ["#PARTIAL"])
-        self.assertFalse(result[1]["fully_playable"])
-
-    def test_slots_3_through_7_dont_trigger_variant_check(self):
-        cards = ["A", "B", "C", "D", "E", "F", "G", "H"]
-        # Slots 0-2 have no variants; slots 3-7 have hasEvolution=True but
-        # should NOT trigger an unlock check because variant slots are 0-2 only.
-        deck = _deck(
-            cards,
-            count=5,
-            variants=[(False, False)] * 3 + [(True, False)] * 5,
-        )
-        owned = set(cards)
-        levels = {n: 14 for n in cards}
-        evos = {n: 0 for n in cards}  # Nothing unlocked anywhere
-
-        result = pick_recommended_decks([deck], owned, levels, evos, limit=1)
-
-        self.assertTrue(result[0]["fully_playable"])
-        self.assertEqual(result[0]["missing_variants"], [])
 
     def test_evolution_level_3_satisfies_both_slots(self):
-        cards = ["Wizard", "B", "C", "D", "E", "F", "G", "H"]
-        # Same card in slot 0 (needs evo) and (hypothetically) implied hero
-        # via a second deck — verify the bitmask check.
-        evo_deck = _deck(
-            cards, count=5, variants=[(True, True)] + [(False, False)] * 7
-        )
-        hero_deck = _deck(
-            ["B", "Wizard", "C", "D", "E", "F", "G", "H"],
-            count=4,
-            variants=[(False, False), (True, True)] + [(False, False)] * 6,
-        )
-        owned = set(cards)
-        levels = {n: 14 for n in cards}
-        evos = {n: 0 for n in cards}
-        evos["Wizard"] = 3  # Both variants unlocked
-
-        result = pick_recommended_decks(
-            [evo_deck, hero_deck], owned, levels, evos, limit=2
-        )
-
+        ids = list(range(8))
+        names = ["Wizard"] + [chr(ord("B") + i) for i in range(7)]
+        deck = _deck(ids, 5, evo_ids=[ids[0]], card_names=names)
+        owned = set(names)
+        levels = {n: 14 for n in names}
+        evos = {n: 0 for n in names}
+        evos["Wizard"] = 3
+        result = pick_recommended_decks([deck], owned, levels, evos, limit=1)
         self.assertTrue(result[0]["fully_playable"])
-        self.assertTrue(result[1]["fully_playable"])

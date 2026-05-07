@@ -1,39 +1,50 @@
-from apis.utils.variants import is_variant_unlocked, slot_active_variant
+from apis.utils.variants import is_variant_unlocked
 
 
 def pick_recommended_decks(
-    all_decks, owned_card_names, level_by_name, evolution_level_by_name, limit=3
+    candidate_decks, owned_card_names, level_by_name,
+    evolution_level_by_name, limit=3,
 ):
-    """Top `limit` decks the player owns all base cards for, ranked by:
+    """Score and rank candidate decks by playability for the owning player.
+
+    `candidate_decks` is a list of dicts:
+      {id, hash, count, card_ids: [...], evo_card_ids: [...],
+       hero_card_ids: [...], cards: [{name, ...}]}
+    where `cards` is the hydrated card list (already in render order).
+
+    Returns the top `limit` decks ranked by:
        (1) fully playable (all required variants also unlocked) first,
        (2) then by count descending.
 
-    Each result is the input deck dict augmented with:
-      - `avg_level`: mean of `level_by_name[name]` across the deck's cards (1 dp)
-      - `fully_playable`: True iff `missing_variants` is empty
-      - `missing_variants`: list of {name, slot, variant} for slots whose active
-        variant the player has not unlocked.
-    Sort is stable on the secondary key — ties preserve input order.
+    Each result is the input dict augmented with:
+      - avg_level, fully_playable, missing_variants
     """
     annotated = []
-    for deck in all_decks:
+    for deck in candidate_decks:
         names = [c["name"] for c in deck["cards"]]
         if not names:
             continue
         if not all(n in owned_card_names for n in names):
             continue
         avg_level = sum(level_by_name[n] for n in names) / len(names)
+        evo_set = set(deck["evo_card_ids"])
+        hero_set = set(deck["hero_card_ids"])
         missing = []
-        for slot_idx, card in enumerate(deck["cards"]):
-            variant = slot_active_variant(
-                slot_idx, card.get("hasEvolution"), card.get("hasHero")
-            )
+        for card in deck["cards"]:
+            card_id = card.get("id")
+            variant = None
+            if card_id is not None:
+                if card_id in evo_set:
+                    variant = "evolution"
+                elif card_id in hero_set:
+                    variant = "hero"
             if variant and not is_variant_unlocked(
                 evolution_level_by_name.get(card["name"]), variant
             ):
-                missing.append(
-                    {"name": card["name"], "slot": slot_idx, "variant": variant}
-                )
+                missing.append({
+                    "name": card["name"],
+                    "variant": variant,
+                })
         annotated.append({
             **deck,
             "avg_level": round(avg_level, 1),
