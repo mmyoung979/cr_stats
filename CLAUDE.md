@@ -14,13 +14,12 @@ The Makefile drives the full lifecycle through `docker-compose`:
 
 - `make init` — first-time setup: bring up the stack, create tables, run an initial data pull.
 - `make up` — start backend / postgres / nginx (`docker-compose --env-file .env up -d`).
-- `make init-db` — create the `common_cards` and `common_decks` tables (idempotent).
-- `make update-cards` — refresh both tables by hitting the Clash Royale API for the top 100 players.
+- `make migrate` — create/migrate the relational tables (`cards`, `decks`, `players`, `battles`) — idempotent.
+- `make update-cards` — refresh data by hitting the Clash Royale API for the top 100 players.
 
 Other useful invocations:
 
 - Backend tests: `docker-compose exec backend python -m unittest backend/tests/test_sanity.py` (the test suite is currently a single sanity test).
-- Dry run of the data pipeline without writing to the DB: `docker-compose exec backend python ./scripts/dry_run.py` (prints deck JSON; uncomment the card lines to see card aggregation).
 - Frontend dev server: `cd frontend && npm start` (serves on `:3000`, hits backend at `http://localhost:5001`).
 - Frontend production build: `cd frontend && npm run build` — nginx (in the `server` container) serves `frontend/build` via a bind mount, so you must rebuild before changes appear in the dockerized stack.
 
@@ -29,11 +28,10 @@ Other useful invocations:
 ### Data flow
 
 1. `scripts/update_cards.py` is the cron-style entry point. It calls `scripts/utils/data_utils.py` to fetch the latest season ID, the top N player tags, and each player's battle log (parallelized via a 20-worker `ThreadPoolExecutor`).
-2. `get_card_data` and `get_deck_data` filter to `pathOfLegend` battles only, and aggregate by card name (cards) or by sha256 hash of the sorted card-name list (decks). The first two card slots are treated as evolution slots — that's why `evolutionCount` is only incremented for `idx < 2`.
-3. The aggregated lists are JSON-serialized and inserted as new rows in `common_cards` / `common_decks` with a UTC timestamp. The schema retains history; reads always pull `ORDER BY timestamp DESC LIMIT 1`.
-4. Flask-RESTful resources (`apis/most_common_cards.py`, `apis/most_common_decks.py`) mounted in `app.py` at `/cards` and `/decks` return that latest JSON blob as-is to the frontend.
+2. Battle data is filtered to `pathOfLegend` battles and written into a relational schema: `cards`, `decks`, `players`, and `battles` tables (created/migrated via `make migrate`).
+3. Flask-RESTful resources mounted in `app.py` at `/cards`, `/decks`, `/battles`, and `/player/<tag>` query the relational tables at request time and hydrate deck/card data via `apis/utils/decks.py:hydrate_deck`.
 
-This means the API is a thin read of pre-computed snapshots — there is no API-time call to the Clash Royale API. To change what's served, change the aggregation in `data_utils.py` and re-run `make update-cards`.
+There is no API-time call to the Clash Royale API — all data comes from the relational tables populated by `make update-cards`. To change what's served, change the aggregation in `data_utils.py` and re-run `make update-cards`.
 
 ### Backend layout / import conventions
 

@@ -6,7 +6,7 @@ def _card_json(card_row, active_form):
         "heroIcon": card_row["hero_icon_url"],
         "hasEvolution": card_row["has_evolution"],
         "hasHero": card_row["has_hero"],
-        "elixir_cost": card_row["elixir_cost"],
+        "elixirCost": card_row["elixir_cost"],
         "activeForm": active_form,
     }
 
@@ -34,7 +34,7 @@ def hydrate_deck(deck_row, cards_by_id):
             regulars.append(_card_json(card_row, None))
 
     def by_elixir(card):
-        return card["elixir_cost"] if card["elixir_cost"] is not None else 0
+        return card["elixirCost"] if card["elixirCost"] is not None else 0
 
     evos.sort(key=by_elixir)
     heroes.sort(key=by_elixir)

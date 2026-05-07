@@ -4,13 +4,19 @@ import { activeSlotVariant, isVariantUnlocked } from "../utils/variants";
 // Per-slot variant rule:
 // slot 0 = evolution slot, slot 1 = hero (evo as fallback for malformed
 // decks), slot 2 = hero or evo (hero default when both unlocked), else regular.
-function pickIcon({ slotIndex, icon, evolvedIcon, heroIcon, hasEvolution, hasHero }) {
-    if (slotIndex === 0) {
-        return hasEvolution && evolvedIcon ? evolvedIcon : icon;
-    }
-    if (slotIndex === 1 || slotIndex === 2) {
-        if (hasHero && heroIcon) return heroIcon;
-        if (hasEvolution && evolvedIcon) return evolvedIcon;
+function pickIcon({ slotIndex, icon, evolvedIcon, heroIcon, hasEvolution, hasHero, activeForm }) {
+    // Prefer explicit activeForm from the backend hydrate_deck.
+    if (activeForm === "evolution" && evolvedIcon) return evolvedIcon;
+    if (activeForm === "hero" && heroIcon) return heroIcon;
+    if (activeForm === null || activeForm === undefined) {
+        // Legacy fallback: derive from slot index (pre-relational call sites).
+        if (slotIndex === 0) {
+            return hasEvolution && evolvedIcon ? evolvedIcon : icon;
+        }
+        if (slotIndex === 1 || slotIndex === 2) {
+            if (hasHero && heroIcon) return heroIcon;
+            if (hasEvolution && evolvedIcon) return evolvedIcon;
+        }
     }
     return icon;
 }
@@ -25,7 +31,9 @@ function ownershipBadge(card, slotIndex, ownership) {
             </span>
         );
     }
-    const variant = activeSlotVariant(slotIndex, card.hasEvolution, card.hasHero);
+    const variant = card.activeForm !== undefined
+        ? card.activeForm
+        : activeSlotVariant(slotIndex, card.hasEvolution, card.hasHero);
     if (variant && !isVariantUnlocked(info.evolutionLevel, variant)) {
         return (
             <span className="badge bg-warning text-dark position-absolute top-0 end-0 m-1">

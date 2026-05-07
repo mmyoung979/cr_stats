@@ -40,7 +40,7 @@ class TestHydrateDeck(TestCase):
         self.assertEqual(names[0], "EvoCard")
         self.assertEqual(names[1], "HeroCard")
         # Remaining 6 are sorted by elixir cost ascending
-        remaining = [c["elixir_cost"] for c in result[2:]]
+        remaining = [c["elixirCost"] for c in result[2:]]
         self.assertEqual(remaining, sorted(remaining))
 
     def test_active_form_set_per_card(self):
@@ -85,7 +85,7 @@ class TestHydrateDeck(TestCase):
         first = result[0]
         self.assertEqual(set(first.keys()), {
             "name", "icon", "evolvedIcon", "heroIcon",
-            "hasEvolution", "hasHero", "elixir_cost", "activeForm",
+            "hasEvolution", "hasHero", "elixirCost", "activeForm",
         })
         self.assertEqual(first["icon"], "Furnace.png")
         self.assertEqual(first["evolvedIcon"], "Furnace-evo.png")
