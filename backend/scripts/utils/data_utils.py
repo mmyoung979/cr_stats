@@ -10,6 +10,8 @@ import requests
 
 # Local imports
 from settings import API_URL, HEADERS
+from apis.utils.db_utils import make_connection
+from apis.utils.variants import slot_active_variant
 
 # Global variables
 COUNT = "count"
@@ -262,3 +264,84 @@ def get_battle_rows(battlelog_data, rank_by_tag=None):
             except (KeyError, ValueError):
                 continue
     return rows
+
+
+def _hash_deck(card_ids, evo_card_ids, hero_card_ids):
+    payload = (
+        "|".join(str(i) for i in sorted(card_ids))
+        + "::"
+        + "|".join(str(i) for i in sorted(evo_card_ids))
+        + "::"
+        + "|".join(str(i) for i in sorted(hero_card_ids))
+    )
+    return hashlib.sha256(payload.encode()).hexdigest()
+
+
+def infer_deck(battle_cards):
+    """Convert a CR battle's `team[0].cards` (or `opponent[0].cards`) array
+    into deck identity fields: sorted card_ids set, the evo card subset,
+    the hero card subset, and the canonical hash."""
+    evo_card_ids = []
+    hero_card_ids = []
+    for slot_idx, card in enumerate(battle_cards):
+        icons = card.get("iconUrls") or {}
+        variant = slot_active_variant(
+            slot_idx,
+            icons.get("evolutionMedium") is not None,
+            icons.get("heroMedium") is not None,
+        )
+        if variant == "evolution":
+            evo_card_ids.append(card["id"])
+        elif variant == "hero":
+            hero_card_ids.append(card["id"])
+    card_ids = sorted(c["id"] for c in battle_cards)
+    evo_card_ids.sort()
+    hero_card_ids.sort()
+    return {
+        "card_ids": card_ids,
+        "evo_card_ids": evo_card_ids,
+        "hero_card_ids": hero_card_ids,
+        "hash": _hash_deck(card_ids, evo_card_ids, hero_card_ids),
+    }
+
+
+CARDS_UPSERT_SQL = """
+INSERT INTO cards (
+    id, name, rarity, elixir_cost, max_level,
+    has_evolution, has_hero,
+    icon_url, evolution_icon_url, hero_icon_url
+) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+ON CONFLICT (id) DO UPDATE SET
+    name = EXCLUDED.name,
+    rarity = EXCLUDED.rarity,
+    elixir_cost = EXCLUDED.elixir_cost,
+    max_level = EXCLUDED.max_level,
+    has_evolution = EXCLUDED.has_evolution,
+    has_hero = EXCLUDED.has_hero,
+    icon_url = EXCLUDED.icon_url,
+    evolution_icon_url = EXCLUDED.evolution_icon_url,
+    hero_icon_url = EXCLUDED.hero_icon_url
+"""
+
+
+def refresh_cards_catalog():
+    """Fetch the global card catalog from CR /cards and upsert every row."""
+    response = get_data(API_URL + "/cards")
+    items = response.get("items", [])
+    with make_connection() as connection:
+        with connection.cursor() as cursor:
+            for card in items:
+                icons = card.get("iconUrls") or {}
+                cursor.execute(CARDS_UPSERT_SQL, (
+                    card["id"],
+                    card["name"],
+                    card.get("rarity"),
+                    card.get("elixirCost"),
+                    card.get("maxLevel"),
+                    icons.get("evolutionMedium") is not None,
+                    icons.get("heroMedium") is not None,
+                    icons.get("medium"),
+                    icons.get("evolutionMedium"),
+                    icons.get("heroMedium"),
+                ))
+            connection.commit()
