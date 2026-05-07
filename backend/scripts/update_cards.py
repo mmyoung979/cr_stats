@@ -1,86 +1,60 @@
-# Python imports
-import json
-from datetime import datetime
-
-# Third party imports
-from psycopg2.extras import Json, execute_values
-
 # Local imports
 from apis.utils.db_utils import make_connection
 from scripts.utils.data_utils import (
-    get_battle_rows,
+    _parse_battle_time,
+    _resolve_rank,
     get_battlelog_data,
-    get_card_data,
-    get_deck_data,
+    infer_deck,
+    insert_battle,
+    refresh_cards_catalog,
+    upsert_deck,
+    upsert_player,
 )
-from settings import TZ
+
+RANKED = "pathOfLegend"
 
 
-BATTLE_INSERT_SQL = """
-INSERT INTO recent_battles (
-    battle_time, team_tag, team_name, team_rank, team_deck, team_crowns,
-    opp_tag, opp_name, opp_rank, opp_deck, opp_crowns, fetched_at
-) VALUES %s
-ON CONFLICT (battle_time, team_tag) DO NOTHING
-"""
-
-
-def update_common_cards_and_decks(player_count: int = 50):
-    """
-    Fetches battle log data, processes it to get common cards, common decks,
-    and recent battles, and updates the database with the latest data.
-    """
+def ingest_battles(player_count: int = 100):
+    refresh_cards_catalog()
     battlelog_data, rank_by_tag = get_battlelog_data(player_count)
-    card_data = json.dumps(get_card_data(battlelog_data), indent=2)
-    deck_data = json.dumps(get_deck_data(battlelog_data), indent=2)
-    battle_rows = get_battle_rows(battlelog_data, rank_by_tag)
 
     with make_connection() as connection:
         with connection.cursor() as cursor:
-            sql = f"""
-            INSERT INTO common_cards(
-                cards,
-                timestamp
-            )
-            VALUES(
-                '{card_data}',
-                '{datetime.now(TZ)}'
-            );
-            INSERT INTO common_decks(
-                decks,
-                timestamp
-            )
-            VALUES(
-                '{deck_data}',
-                '{datetime.now(TZ)}'
-            );
-            """
-            cursor.execute(sql)
-
-            if battle_rows:
-                values = [
-                    (
-                        r["battle_time"],
-                        r["team_tag"],
-                        r["team_name"],
-                        r["team_rank"],
-                        Json(r["team_deck"]),
-                        r["team_crowns"],
-                        r["opp_tag"],
-                        r["opp_name"],
-                        r["opp_rank"],
-                        Json(r["opp_deck"]),
-                        r["opp_crowns"],
-                        r["fetched_at"],
-                    )
-                    for r in battle_rows
-                ]
-                execute_values(cursor, BATTLE_INSERT_SQL, values)
-
+            for battlelog in battlelog_data:
+                if not isinstance(battlelog, list):
+                    continue
+                for battle in battlelog:
+                    if battle.get("type") != RANKED:
+                        continue
+                    team = (battle.get("team") or [None])[0]
+                    opp = (battle.get("opponent") or [None])[0]
+                    if not team or not opp:
+                        continue
+                    try:
+                        team_deck = infer_deck(team["cards"])
+                        opp_deck = infer_deck(opp["cards"])
+                        team_deck_id = upsert_deck(cursor, team_deck)
+                        opp_deck_id = upsert_deck(cursor, opp_deck)
+                        upsert_player(cursor, team["tag"], team.get("name"))
+                        if opp.get("tag"):
+                            upsert_player(cursor, opp["tag"], opp.get("name"))
+                        insert_battle(
+                            cursor,
+                            timestamp=_parse_battle_time(battle["battleTime"]),
+                            team_tag=team["tag"],
+                            opp_tag=opp.get("tag"),
+                            team_deck_id=team_deck_id,
+                            opp_deck_id=opp_deck_id,
+                            team_rank=_resolve_rank(team, rank_by_tag),
+                            opp_rank=_resolve_rank(opp, rank_by_tag),
+                            team_crowns=team.get("crowns"),
+                            opp_crowns=opp.get("crowns"),
+                        )
+                    except (KeyError, ValueError):
+                        continue
             connection.commit()
 
 
 if __name__ == "__main__":
-    player_count: int = 100
-    update_common_cards_and_decks(player_count)
-    print("Common cards, decks, and recent battles updated successfully.")
+    ingest_battles(player_count=100)
+    print("Cards catalog refreshed and battles ingested.")

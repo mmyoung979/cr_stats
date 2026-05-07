@@ -305,6 +305,58 @@ def infer_deck(battle_cards):
     }
 
 
+DECK_UPSERT_SQL = """
+INSERT INTO decks (hash, card_ids, evo_card_ids, hero_card_ids)
+VALUES (%s, %s, %s, %s)
+ON CONFLICT (hash) DO UPDATE SET hash = EXCLUDED.hash
+RETURNING id
+"""
+
+
+def upsert_deck(cursor, deck):
+    """Insert (or get id of existing) deck row. `deck` is the dict from
+    `infer_deck`. Returns the deck's id."""
+    cursor.execute(DECK_UPSERT_SQL, (
+        deck["hash"],
+        deck["card_ids"],
+        deck["evo_card_ids"],
+        deck["hero_card_ids"],
+    ))
+    return cursor.fetchone()[0]
+
+
+PLAYER_UPSERT_SQL = """
+INSERT INTO players (tag, name)
+VALUES (%s, %s)
+ON CONFLICT (tag) DO UPDATE SET name = EXCLUDED.name
+"""
+
+
+def upsert_player(cursor, tag, name):
+    cursor.execute(PLAYER_UPSERT_SQL, (tag, name))
+
+
+BATTLE_INSERT_SQL = """
+INSERT INTO battles (
+    timestamp, team_tag, opp_tag, team_deck_id, opp_deck_id,
+    team_rank, opp_rank, team_crowns, opp_crowns
+) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+ON CONFLICT (timestamp, team_tag) DO NOTHING
+"""
+
+
+def insert_battle(
+    cursor, timestamp, team_tag, opp_tag,
+    team_deck_id, opp_deck_id,
+    team_rank, opp_rank, team_crowns, opp_crowns,
+):
+    cursor.execute(BATTLE_INSERT_SQL, (
+        timestamp, team_tag, opp_tag,
+        team_deck_id, opp_deck_id,
+        team_rank, opp_rank, team_crowns, opp_crowns,
+    ))
+
+
 CARDS_UPSERT_SQL = """
 INSERT INTO cards (
     id, name, rarity, elixir_cost, max_level,
