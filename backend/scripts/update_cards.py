@@ -56,5 +56,5 @@ def ingest_battles(player_count: int = 100):
 
 
 if __name__ == "__main__":
-    ingest_battles(player_count=100)
+    ingest_battles(player_count=1000)
     print("Cards catalog refreshed and battles ingested.")
