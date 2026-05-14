@@ -35,7 +35,7 @@ export default class Card extends Component {
                 <div className="card-body">
                     <h5 className="card-title">{name}</h5>
                     <p className="card-text">
-                        <b>{count}</b>/100 top players use {name}
+                        <b>{count}</b>/1000 top players use {name}
                     </p>
                     {this.props.hasHero && (
                         <p className="card-text">
