@@ -14,29 +14,60 @@ def _card_json(card_row, active_form):
 def hydrate_deck(deck_row, cards_by_id):
     """Build the frontend per-card JSON list for one deck.
 
-    Order: evos first, then heroes, then regulars — each group sorted by
-    elixir_cost ascending. activeForm is derived from membership in the
-    deck's evo_card_ids / hero_card_ids. Unknown card_ids are skipped.
+    Slots 0/1/2 are the variant slots, filled in priority order to mirror
+    the CR client layout:
+      - Slot 0: evo (if any), else regular
+      - Slot 1: hero (if any), else evo (fallback), else regular
+      - Slot 2: hero (if any remaining), else evo (fallback), else regular
+    Slots 3-7: remaining regular cards, sorted by elixir cost ascending.
+    activeForm derived from membership in evo_card_ids / hero_card_ids.
+    Unknown card_ids are skipped.
     """
-    evo_set = set(deck_row["evo_card_ids"])
-    hero_set = set(deck_row["hero_card_ids"])
+    evos = list(deck_row["evo_card_ids"])
+    heroes = list(deck_row["hero_card_ids"])
+    variant_set = set(evos) | set(heroes)
 
-    evos, heroes, regulars = [], [], []
-    for card_id in deck_row["card_ids"]:
-        card_row = cards_by_id.get(card_id)
-        if card_row is None:
+    # Sort regular (non-variant) cards by elixir cost ascending so any
+    # regular that fills a leftover variant slot is the cheapest available.
+    other_rows = [
+        cards_by_id[cid]
+        for cid in deck_row["card_ids"]
+        if cid not in variant_set and cid in cards_by_id
+    ]
+    other_rows.sort(key=lambda r: r["elixir_cost"] if r["elixir_cost"] is not None else 0)
+    other_ids = [r["id"] for r in other_rows]
+
+    def take_slot_0():
+        if evos:
+            return (evos.pop(0), "evolution")
+        if other_ids:
+            return (other_ids.pop(0), None)
+        return None
+
+    def take_hero_or_evo_slot():
+        if heroes:
+            return (heroes.pop(0), "hero")
+        if evos:
+            return (evos.pop(0), "evolution")
+        if other_ids:
+            return (other_ids.pop(0), None)
+        return None
+
+    head = []
+    for picker in (take_slot_0, take_hero_or_evo_slot, take_hero_or_evo_slot):
+        slot = picker()
+        if slot is not None:
+            head.append(slot)
+
+    result = []
+    for cid, active_form in head:
+        row = cards_by_id.get(cid)
+        if row is None:
             continue
-        if card_id in evo_set:
-            evos.append(_card_json(card_row, "evolution"))
-        elif card_id in hero_set:
-            heroes.append(_card_json(card_row, "hero"))
-        else:
-            regulars.append(_card_json(card_row, None))
+        result.append(_card_json(row, active_form))
+    for cid in other_ids:
+        row = cards_by_id.get(cid)
+        if row is not None:
+            result.append(_card_json(row, None))
 
-    def by_elixir(card):
-        return card["elixirCost"] if card["elixirCost"] is not None else 0
-
-    evos.sort(key=by_elixir)
-    heroes.sort(key=by_elixir)
-    regulars.sort(key=by_elixir)
-    return evos + heroes + regulars
+    return result

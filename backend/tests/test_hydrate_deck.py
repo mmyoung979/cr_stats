@@ -19,7 +19,7 @@ def _card_row(card_id, name, elixir_cost=3, has_evolution=False, has_hero=False)
 
 
 class TestHydrateDeck(TestCase):
-    def test_orders_evos_first_then_heroes_then_regulars_by_elixir(self):
+    def test_one_evo_one_hero_renders_evo_hero_then_regulars(self):
         cards_by_id = {
             1: _card_row(1, "EvoCard", elixir_cost=4, has_evolution=True),
             2: _card_row(2, "HeroCard", elixir_cost=5, has_hero=True),
@@ -39,31 +39,92 @@ class TestHydrateDeck(TestCase):
         names = [c["name"] for c in result]
         self.assertEqual(names[0], "EvoCard")
         self.assertEqual(names[1], "HeroCard")
-        # Remaining 6 are sorted by elixir cost ascending
+        # Slots 2-7 (indices 2-7) are regulars sorted by elixir
         remaining = [c["elixirCost"] for c in result[2:]]
         self.assertEqual(remaining, sorted(remaining))
 
-    def test_active_form_set_per_card(self):
+    def test_two_evos_one_hero_renders_evo_hero_evo(self):
+        # User-stated rule: "If a deck has 2 evos and a hero, the order
+        # must be evo, hero, evo." Slot 0 takes evo, slot 1 takes hero,
+        # slot 2 takes the remaining evo.
         cards_by_id = {
-            1: _card_row(1, "EvoCard", has_evolution=True),
-            2: _card_row(2, "HeroCard", has_hero=True),
-            3: _card_row(3, "Plain"),
-            4: _card_row(4, "Plain2"),
-            5: _card_row(5, "Plain3"),
-            6: _card_row(6, "Plain4"),
-            7: _card_row(7, "Plain5"),
-            8: _card_row(8, "Plain6"),
+            1: _card_row(1, "FirstEvo", has_evolution=True),
+            2: _card_row(2, "Hero", has_hero=True),
+            3: _card_row(3, "SecondEvo", has_evolution=True),
+            4: _card_row(4, "Reg1"),
+            5: _card_row(5, "Reg2"),
+            6: _card_row(6, "Reg3"),
+            7: _card_row(7, "Reg4"),
+            8: _card_row(8, "Reg5"),
+        }
+        deck_row = {
+            "card_ids": [1, 2, 3, 4, 5, 6, 7, 8],
+            "evo_card_ids": [1, 3],
+            "hero_card_ids": [2],
+        }
+        result = hydrate_deck(deck_row, cards_by_id)
+        forms = [(c["name"], c["activeForm"]) for c in result]
+        self.assertEqual(forms[0][1], "evolution")
+        self.assertEqual(forms[1][1], "hero")
+        self.assertEqual(forms[2][1], "evolution")
+        # Slots 3-7 are regulars
+        for name, form in forms[3:]:
+            self.assertIsNone(form)
+
+    def test_one_evo_two_heroes_renders_evo_hero_hero(self):
+        cards_by_id = {
+            1: _card_row(1, "Evo", has_evolution=True),
+            2: _card_row(2, "Hero1", has_hero=True),
+            3: _card_row(3, "Hero2", has_hero=True),
+            4: _card_row(4, "Reg1"),
+            5: _card_row(5, "Reg2"),
+            6: _card_row(6, "Reg3"),
+            7: _card_row(7, "Reg4"),
+            8: _card_row(8, "Reg5"),
         }
         deck_row = {
             "card_ids": [1, 2, 3, 4, 5, 6, 7, 8],
             "evo_card_ids": [1],
-            "hero_card_ids": [2],
+            "hero_card_ids": [2, 3],
         }
         result = hydrate_deck(deck_row, cards_by_id)
-        forms = {c["name"]: c["activeForm"] for c in result}
-        self.assertEqual(forms["EvoCard"], "evolution")
-        self.assertEqual(forms["HeroCard"], "hero")
-        self.assertIsNone(forms["Plain"])
+        forms = [c["activeForm"] for c in result]
+        self.assertEqual(forms[:3], ["evolution", "hero", "hero"])
+
+    def test_two_evos_zero_heroes_falls_back_evo_evo_regular(self):
+        # No hero — slot 1 falls back to second evo, slot 2 is regular.
+        cards_by_id = {
+            1: _card_row(1, "Evo1", has_evolution=True),
+            2: _card_row(2, "Evo2", has_evolution=True),
+            3: _card_row(3, "Reg1"),
+            4: _card_row(4, "Reg2"),
+            5: _card_row(5, "Reg3"),
+            6: _card_row(6, "Reg4"),
+            7: _card_row(7, "Reg5"),
+            8: _card_row(8, "Reg6"),
+        }
+        deck_row = {
+            "card_ids": [1, 2, 3, 4, 5, 6, 7, 8],
+            "evo_card_ids": [1, 2],
+            "hero_card_ids": [],
+        }
+        result = hydrate_deck(deck_row, cards_by_id)
+        forms = [c["activeForm"] for c in result]
+        self.assertEqual(forms[:3], ["evolution", "evolution", None])
+
+    def test_no_variants_renders_all_regulars_by_elixir(self):
+        cards_by_id = {
+            i: _card_row(i, f"C{i}", elixir_cost=10 - i)
+            for i in range(1, 9)
+        }
+        deck_row = {
+            "card_ids": list(range(1, 9)),
+            "evo_card_ids": [],
+            "hero_card_ids": [],
+        }
+        result = hydrate_deck(deck_row, cards_by_id)
+        elixirs = [c["elixirCost"] for c in result]
+        self.assertEqual(elixirs, sorted(elixirs))
 
     def test_emits_expected_card_shape(self):
         cards_by_id = {
@@ -92,7 +153,6 @@ class TestHydrateDeck(TestCase):
         self.assertEqual(first["activeForm"], "evolution")
 
     def test_skips_unknown_card_ids(self):
-        # If a card_id is missing from cards_by_id, skip it (defensive).
         cards_by_id = {
             1: _card_row(1, "A"),
             2: _card_row(2, "B"),
