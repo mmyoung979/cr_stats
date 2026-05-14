@@ -52,15 +52,32 @@ class TestInferDeck(TestCase):
         self.assertEqual(result["evo_card_ids"], [])
         self.assertEqual(result["hero_card_ids"], [1])
 
-    def test_evo_fallback_in_slot_1(self):
-        # slot 1 has hasEvolution but NOT hasHero -> falls back to evo
+    def test_evo_in_slot_1_does_not_count_as_evo(self):
+        # Slot 1 is hero/champion only — evo cards there are regulars.
         cards = [
             _card(0, "Furnace"),
             _card(1, "Tesla", has_evo=True),
         ] + [_card(i, chr(ord("A") + i)) for i in range(2, 8)]
         result = infer_deck(cards)
-        self.assertEqual(result["evo_card_ids"], [1])
+        self.assertEqual(result["evo_card_ids"], [])
         self.assertEqual(result["hero_card_ids"], [])
+
+    def test_champion_in_slot_1_not_tracked_in_evo_or_hero(self):
+        # Champions aren't stored in evo/hero subsets — they're inherent to
+        # the card (rarity == "champion") and detected at hydrate time.
+        champ = {
+            "id": 1,
+            "name": "Mighty Miner",
+            "rarity": "champion",
+            "iconUrls": {"medium": "MM.png"},
+        }
+        cards = [_card(0, "Furnace", has_evo=True), champ] + [
+            _card(i, chr(ord("A") + i)) for i in range(2, 8)
+        ]
+        result = infer_deck(cards)
+        self.assertEqual(result["evo_card_ids"], [0])
+        self.assertEqual(result["hero_card_ids"], [])
+        self.assertIn(1, result["card_ids"])  # champion is in the card set
 
     def test_three_form_slots_filled(self):
         cards = [

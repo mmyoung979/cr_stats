@@ -3,11 +3,12 @@ from unittest import TestCase
 from apis.utils.decks import hydrate_deck
 
 
-def _card_row(card_id, name, elixir_cost=3, has_evolution=False, has_hero=False):
+def _card_row(card_id, name, elixir_cost=3, has_evolution=False, has_hero=False,
+              rarity="common"):
     return {
         "id": card_id,
         "name": name,
-        "rarity": "common",
+        "rarity": rarity,
         "elixir_cost": elixir_cost,
         "max_level": 16,
         "has_evolution": has_evolution,
@@ -91,8 +92,9 @@ class TestHydrateDeck(TestCase):
         forms = [c["activeForm"] for c in result]
         self.assertEqual(forms[:3], ["evolution", "hero", "hero"])
 
-    def test_two_evos_zero_heroes_falls_back_evo_evo_regular(self):
-        # No hero — slot 1 falls back to second evo, slot 2 is regular.
+    def test_two_evos_zero_heroes_renders_evo_regular_evo(self):
+        # Slot 1 is hero/champion only — without a hero or champion, slot 1
+        # is a regular card. The second evo falls back to slot 2.
         cards_by_id = {
             1: _card_row(1, "Evo1", has_evolution=True),
             2: _card_row(2, "Evo2", has_evolution=True),
@@ -110,7 +112,56 @@ class TestHydrateDeck(TestCase):
         }
         result = hydrate_deck(deck_row, cards_by_id)
         forms = [c["activeForm"] for c in result]
-        self.assertEqual(forms[:3], ["evolution", "evolution", None])
+        self.assertEqual(forms[:3], ["evolution", None, "evolution"])
+
+    def test_champion_placed_in_slot_1(self):
+        # Champion goes in slot 1 (preferred), evos in slot 0 and slot 2.
+        cards_by_id = {
+            1: _card_row(1, "Tesla", has_evolution=True),
+            2: _card_row(2, "MightyMiner", rarity="champion"),
+            3: _card_row(3, "Firecracker", has_evolution=True),
+            4: _card_row(4, "Reg1"),
+            5: _card_row(5, "Reg2"),
+            6: _card_row(6, "Reg3"),
+            7: _card_row(7, "Reg4"),
+            8: _card_row(8, "Reg5"),
+        }
+        deck_row = {
+            "card_ids": [1, 2, 3, 4, 5, 6, 7, 8],
+            "evo_card_ids": [1, 3],
+            "hero_card_ids": [],
+        }
+        result = hydrate_deck(deck_row, cards_by_id)
+        forms = [(c["name"], c["activeForm"]) for c in result]
+        self.assertEqual(forms[1], ("MightyMiner", "champion"))
+        self.assertEqual(forms[0][1], "evolution")
+        self.assertEqual(forms[2][1], "evolution")
+        # Slots 3-7 are regulars
+        for name, form in forms[3:]:
+            self.assertIsNone(form)
+
+    def test_champion_takes_precedence_over_hero_in_slot_1(self):
+        # Champion gets slot 1, hero falls to slot 2.
+        cards_by_id = {
+            1: _card_row(1, "Champ", rarity="champion"),
+            2: _card_row(2, "Hero", has_hero=True),
+            3: _card_row(3, "Reg1"),
+            4: _card_row(4, "Reg2"),
+            5: _card_row(5, "Reg3"),
+            6: _card_row(6, "Reg4"),
+            7: _card_row(7, "Reg5"),
+            8: _card_row(8, "Reg6"),
+        }
+        deck_row = {
+            "card_ids": [1, 2, 3, 4, 5, 6, 7, 8],
+            "evo_card_ids": [],
+            "hero_card_ids": [2],
+        }
+        result = hydrate_deck(deck_row, cards_by_id)
+        forms = [(c["name"], c["activeForm"]) for c in result]
+        self.assertEqual(forms[0][1], None)  # slot 0 has no evo, fills with regular
+        self.assertEqual(forms[1], ("Champ", "champion"))
+        self.assertEqual(forms[2], ("Hero", "hero"))
 
     def test_no_variants_renders_all_regulars_by_elixir(self):
         cards_by_id = {

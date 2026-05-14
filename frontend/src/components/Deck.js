@@ -1,27 +1,17 @@
 import React from "react";
-import { activeSlotVariant, isVariantUnlocked } from "../utils/variants";
+import { isVariantUnlocked } from "../utils/variants";
 
-// Per-slot variant rule:
-// slot 0 = evolution slot, slot 1 = hero (evo as fallback for malformed
-// decks), slot 2 = hero or evo (hero default when both unlocked), else regular.
-function pickIcon({ slotIndex, icon, evolvedIcon, heroIcon, hasEvolution, hasHero, activeForm }) {
-    // Prefer explicit activeForm from the backend hydrate_deck.
+// activeForm is set explicitly by the backend's hydrate_deck:
+// "evolution" → use evolvedIcon, "hero" → use heroIcon,
+// "champion" or null → use the regular icon (champion's regular icon
+// is the champion-bordered version, no separate file).
+function pickIcon({ icon, evolvedIcon, heroIcon, activeForm }) {
     if (activeForm === "evolution" && evolvedIcon) return evolvedIcon;
     if (activeForm === "hero" && heroIcon) return heroIcon;
-    if (activeForm === null || activeForm === undefined) {
-        // Legacy fallback: derive from slot index (pre-relational call sites).
-        if (slotIndex === 0) {
-            return hasEvolution && evolvedIcon ? evolvedIcon : icon;
-        }
-        if (slotIndex === 1 || slotIndex === 2) {
-            if (hasHero && heroIcon) return heroIcon;
-            if (hasEvolution && evolvedIcon) return evolvedIcon;
-        }
-    }
     return icon;
 }
 
-function ownershipBadge(card, slotIndex, ownership) {
+function ownershipBadge(card, ownership) {
     if (!ownership) return null;
     const info = ownership[card.name];
     if (!info) {
@@ -31,10 +21,10 @@ function ownershipBadge(card, slotIndex, ownership) {
             </span>
         );
     }
-    const variant = card.activeForm !== undefined
-        ? card.activeForm
-        : activeSlotVariant(slotIndex, card.hasEvolution, card.hasHero);
-    if (variant && !isVariantUnlocked(info.evolutionLevel, variant)) {
+    const variant = card.activeForm;
+    // Champions don't have a separate unlock — owning the card is enough.
+    if (variant && variant !== "champion"
+        && !isVariantUnlocked(info.evolutionLevel, variant)) {
         return (
             <span className="badge bg-warning text-dark position-absolute top-0 end-0 m-1">
                 no {variant === "hero" ? "hero" : "evo"}
@@ -61,14 +51,14 @@ export default function Deck({ cards, ownership }) {
                 return (
                     <div key={idx} className="col-3 position-relative">
                         <img
-                            src={pickIcon({ ...card, slotIndex: idx })}
+                            src={pickIcon(card)}
                             alt={card.name}
                             className={`img-fluid${missing ? " opacity-25" : ""}`}
                             loading="lazy"
                             decoding="async"
                             onError={handleError}
                         />
-                        {ownershipBadge(card, idx, ownership)}
+                        {ownershipBadge(card, ownership)}
                     </div>
                 );
             })}

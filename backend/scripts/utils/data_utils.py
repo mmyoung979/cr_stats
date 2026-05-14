@@ -92,7 +92,8 @@ def _hash_deck(card_ids, evo_card_ids, hero_card_ids):
 def infer_deck(battle_cards):
     """Convert a CR battle's `team[0].cards` (or `opponent[0].cards`) array
     into deck identity fields: sorted card_ids set, the evo card subset,
-    the hero card subset, and the canonical hash."""
+    the hero card subset, and the canonical hash. Champions are not stored
+    separately (they are inherent to the card via `cards.rarity`)."""
     evo_card_ids = []
     hero_card_ids = []
     for slot_idx, card in enumerate(battle_cards):
@@ -101,6 +102,7 @@ def infer_deck(battle_cards):
             slot_idx,
             icons.get("evolutionMedium") is not None,
             icons.get("heroMedium") is not None,
+            is_champion=card.get("rarity") == "champion",
         )
         if variant == "evolution":
             evo_card_ids.append(card["id"])

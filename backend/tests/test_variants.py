@@ -15,20 +15,44 @@ class TestSlotActiveVariant(TestCase):
         self.assertEqual(slot_active_variant(1, False, True), "hero")
         self.assertEqual(slot_active_variant(1, True, True), "hero")
 
-    def test_slot_1_with_evo_only_returns_evolution(self):
-        self.assertEqual(slot_active_variant(1, True, False), "evolution")
+    def test_slot_1_with_evo_only_returns_none(self):
+        # Slot 1 is hero/champion only — evo cards do NOT fall back here.
+        self.assertIsNone(slot_active_variant(1, True, False))
 
     def test_slot_1_with_neither_returns_none(self):
         self.assertIsNone(slot_active_variant(1, False, False))
 
-    def test_slot_2_matches_slot_1_logic(self):
+    def test_slot_1_with_champion_returns_champion(self):
+        self.assertEqual(
+            slot_active_variant(1, False, False, is_champion=True),
+            "champion",
+        )
+
+    def test_slot_1_champion_takes_priority_over_hero(self):
+        self.assertEqual(
+            slot_active_variant(1, False, True, is_champion=True),
+            "champion",
+        )
+
+    def test_slot_2_with_hero_returns_hero(self):
         self.assertEqual(slot_active_variant(2, False, True), "hero")
+
+    def test_slot_2_with_evo_only_returns_evolution(self):
         self.assertEqual(slot_active_variant(2, True, False), "evolution")
+
+    def test_slot_2_with_neither_returns_none(self):
         self.assertIsNone(slot_active_variant(2, False, False))
+
+    def test_slot_2_with_champion_returns_champion(self):
+        self.assertEqual(
+            slot_active_variant(2, False, False, is_champion=True),
+            "champion",
+        )
 
     def test_slots_3_to_7_always_none(self):
         for idx in range(3, 8):
             self.assertIsNone(slot_active_variant(idx, True, True))
+            self.assertIsNone(slot_active_variant(idx, True, True, is_champion=True))
 
 
 class TestIsVariantUnlocked(TestCase):
