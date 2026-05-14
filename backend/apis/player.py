@@ -22,7 +22,7 @@ MAX_DISPLAYED_LEVEL = 16
 CANDIDATES_QUERY = """
 SELECT
     d.id, d.hash, d.card_ids, d.evo_card_ids, d.hero_card_ids,
-    COUNT(*) AS count
+    COUNT(DISTINCT b.team_tag) AS count
 FROM battles b
 JOIN decks d ON d.id = b.team_deck_id
 WHERE b.timestamp > %s

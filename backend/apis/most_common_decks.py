@@ -13,7 +13,7 @@ from settings import META_WINDOW_DAYS
 DECKS_QUERY = """
 SELECT
     d.id, d.card_ids, d.evo_card_ids, d.hero_card_ids,
-    COUNT(*) AS count,
+    COUNT(DISTINCT b.team_tag) AS count,
     array_agg(DISTINCT b.team_tag) AS player_tags
 FROM battles b
 JOIN decks d ON d.id = b.team_deck_id

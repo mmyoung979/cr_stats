@@ -12,7 +12,7 @@ from settings import META_WINDOW_DAYS
 CARDS_QUERY = """
 WITH deck_slots AS (
     SELECT
-        b.team_deck_id AS deck_id,
+        b.team_tag,
         slot.card_id,
         d.evo_card_ids,
         d.hero_card_ids
@@ -23,9 +23,9 @@ WITH deck_slots AS (
 )
 SELECT
     ds.card_id,
-    COUNT(*) AS count,
-    COUNT(*) FILTER (WHERE ds.card_id = ANY(ds.evo_card_ids))  AS evolution_count,
-    COUNT(*) FILTER (WHERE ds.card_id = ANY(ds.hero_card_ids)) AS hero_count,
+    COUNT(DISTINCT ds.team_tag) AS count,
+    COUNT(DISTINCT ds.team_tag) FILTER (WHERE ds.card_id = ANY(ds.evo_card_ids))  AS evolution_count,
+    COUNT(DISTINCT ds.team_tag) FILTER (WHERE ds.card_id = ANY(ds.hero_card_ids)) AS hero_count,
     c.name, c.elixir_cost, c.has_evolution, c.has_hero,
     c.icon_url, c.evolution_icon_url, c.hero_icon_url
 FROM deck_slots ds
