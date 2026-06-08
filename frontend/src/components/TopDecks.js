@@ -2,6 +2,7 @@ import React, { Component } from "react";
 import Deck from "./Deck";
 import DeckStats from "./DeckStats";
 import { avgElixir, fourCardCycle, gamesPlayed } from "../utils/deckMetrics";
+import { isVariantUnlocked } from "../utils/variants";
 import {
     encodePlayerTag,
     getPlayerTag,
@@ -19,6 +20,21 @@ const SORT_OPTIONS = [
     { key: "elixir", label: "Avg elixir", get: (d) => avgElixir(d.cards) },
     { key: "cycle", label: "4-card cycle", get: (d) => fourCardCycle(d.cards) },
 ];
+
+// A deck is playable when the player owns every card AND has every required
+// card form unlocked. Champion / base forms need no separate unlock — owning
+// the card is enough (mirrors the ownership badge rule in Deck.js).
+function isDeckPlayable(deck, ownedMap) {
+    return deck.cards.every((c) => {
+        const info = ownedMap[c.name];
+        if (!info) return false;
+        const variant = c.activeForm;
+        if (variant === "evolution" || variant === "hero") {
+            return isVariantUnlocked(info.evolutionLevel, variant);
+        }
+        return true;
+    });
+}
 
 function sortDecks(decks, sortKey, sortDir) {
     const opt = SORT_OPTIONS.find((o) => o.key === sortKey) || SORT_OPTIONS[0];
@@ -249,9 +265,7 @@ export default class TopDecks extends Component {
 
         let decks = this.state.top_decks;
         if (playableOnly && ownedMap) {
-            decks = decks.filter((d) =>
-                d.cards.every((c) => ownedMap[c.name])
-            );
+            decks = decks.filter((d) => isDeckPlayable(d, ownedMap));
         }
         decks = sortDecks(decks, sortKey, sortDir);
 
