@@ -21,19 +21,28 @@ WITH deck_slots AS (
     JOIN decks d ON d.id = b.team_deck_id,
     UNNEST(d.card_ids) AS slot(card_id)
     WHERE b.timestamp > %s
+),
+usage AS (
+    SELECT
+        ds.card_id,
+        COUNT(DISTINCT ds.team_tag) AS count,
+        COUNT(DISTINCT ds.team_tag) FILTER (WHERE ds.card_id = ANY(ds.evo_card_ids))  AS evolution_count,
+        COUNT(DISTINCT ds.team_tag) FILTER (WHERE ds.card_id = ANY(ds.hero_card_ids)) AS hero_count
+    FROM deck_slots ds
+    GROUP BY ds.card_id
 )
+-- Start FROM the full card catalog and LEFT JOIN usage so cards no top
+-- player ran still appear, with zeroed counts.
 SELECT
-    ds.card_id,
-    COUNT(DISTINCT ds.team_tag) AS count,
-    COUNT(DISTINCT ds.team_tag) FILTER (WHERE ds.card_id = ANY(ds.evo_card_ids))  AS evolution_count,
-    COUNT(DISTINCT ds.team_tag) FILTER (WHERE ds.card_id = ANY(ds.hero_card_ids)) AS hero_count,
+    c.id,
+    COALESCE(u.count, 0) AS count,
+    COALESCE(u.evolution_count, 0) AS evolution_count,
+    COALESCE(u.hero_count, 0) AS hero_count,
     c.name, c.elixir_cost, c.has_evolution, c.has_hero,
     c.icon_url, c.evolution_icon_url, c.hero_icon_url, c.rarity
-FROM deck_slots ds
-JOIN cards c ON c.id = ds.card_id
-GROUP BY ds.card_id, c.name, c.elixir_cost, c.has_evolution, c.has_hero,
-         c.icon_url, c.evolution_icon_url, c.hero_icon_url, c.rarity
-ORDER BY count DESC
+FROM cards c
+LEFT JOIN usage u ON u.card_id = c.id
+ORDER BY count DESC, c.name ASC
 """
 
 

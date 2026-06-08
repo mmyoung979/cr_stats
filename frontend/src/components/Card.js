@@ -37,12 +37,12 @@ export default class Card extends Component {
                     <p className="card-text">
                         <b>{count}</b>/1000 top players use {name}
                     </p>
-                    {this.props.hasHero && (
+                    {count > 0 && this.props.hasHero && (
                         <p className="card-text">
                             <b>{this.props.heroCount}/{count}</b> use the hero variant.
                         </p>
                     )}
-                    {this.props.hasEvolution && (
+                    {count > 0 && this.props.hasEvolution && (
                         <p className="card-text">
                             <b>{this.props.evolutionCount}/{count}</b> are evolved.
                         </p>
