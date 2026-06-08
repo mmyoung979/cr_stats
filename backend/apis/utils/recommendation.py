@@ -20,19 +20,46 @@ FULL_CONFIDENCE_GAMES = 50
 # Displayed in-game level cap (see MAX_DISPLAYED_LEVEL in player.py).
 MAX_LEVEL = 16
 
+# Per-card level quality is NON-LINEAR: max level is ideal, max-1 is still
+# competitive, max-2 is meaningfully underleveled, and it falls off fast below
+# that. Applied per card (then averaged) so a single very-underleveled card
+# isn't masked by an otherwise high average. Levels are integers; anything
+# above the table is ideal, anything below is treated as ~0.
+LEVEL_QUALITY = {
+    16: 1.00,   # ideal
+    15: 0.85,   # competitive
+    14: 0.50,   # underleveled
+    13: 0.20,
+    12: 0.05,
+}
+MIN_LEVEL_QUALITY = 0.0
 
-def _deck_score(avg_level, wins, losses):
-    """Weighted 0..1 score blending win rate, level, and sample size."""
+
+def _level_quality(level):
+    if level >= MAX_LEVEL:
+        return 1.0
+    return LEVEL_QUALITY.get(level, MIN_LEVEL_QUALITY)
+
+
+def _deck_score(card_levels, wins, losses):
+    """Weighted 0..1 score blending win rate, level quality, and sample size.
+
+    `card_levels` is the list of per-card displayed levels (integers); each is
+    run through the non-linear LEVEL_QUALITY curve and averaged.
+    """
     games = wins + losses
     adjusted_win_rate = (
         (wins + SHRINKAGE_GAMES * PRIOR_WIN_RATE)
         / (games + SHRINKAGE_GAMES)
     )
     games_confidence = min(games / FULL_CONFIDENCE_GAMES, 1.0)
-    level_norm = min(avg_level / MAX_LEVEL, 1.0)
+    level_quality = (
+        sum(_level_quality(lvl) for lvl in card_levels) / len(card_levels)
+        if card_levels else 0.0
+    )
     return (
         WIN_RATE_WEIGHT * adjusted_win_rate
-        + LEVEL_WEIGHT * level_norm
+        + LEVEL_WEIGHT * level_quality
         + GAMES_WEIGHT * games_confidence
     )
 
@@ -63,7 +90,8 @@ def pick_recommended_decks(
             continue
         if not all(n in owned_card_names for n in names):
             continue
-        avg_level = sum(level_by_name[n] for n in names) / len(names)
+        card_levels = [level_by_name[n] for n in names]
+        avg_level = sum(card_levels) / len(card_levels)
         evo_set = set(deck["evo_card_ids"])
         hero_set = set(deck["hero_card_ids"])
         missing = []
@@ -83,7 +111,7 @@ def pick_recommended_decks(
                     "variant": variant,
                 })
         score = _deck_score(
-            avg_level, deck.get("wins", 0), deck.get("losses", 0)
+            card_levels, deck.get("wins", 0), deck.get("losses", 0)
         )
         annotated.append({
             **deck,
