@@ -1,6 +1,7 @@
 import React, { Component } from "react";
 import Deck from "./Deck";
 import DeckStats from "./DeckStats";
+import { avgElixir, fourCardCycle, gamesPlayed } from "../utils/deckMetrics";
 import {
     encodePlayerTag,
     getPlayerTag,
@@ -8,6 +9,29 @@ import {
 } from "../utils/playerTag";
 
 const OVERLAY_KEY = "cr_stats_overlay_on";
+
+// Sort options for the decks page. Each accessor returns a number or null;
+// nulls always sort last regardless of direction.
+const SORT_OPTIONS = [
+    { key: "players", label: "Players", get: (d) => d.count },
+    { key: "winRate", label: "Win rate", get: (d) => d.winRate },
+    { key: "games", label: "Games played", get: (d) => gamesPlayed(d) },
+    { key: "elixir", label: "Avg elixir", get: (d) => avgElixir(d.cards) },
+    { key: "cycle", label: "4-card cycle", get: (d) => fourCardCycle(d.cards) },
+];
+
+function sortDecks(decks, sortKey, sortDir) {
+    const opt = SORT_OPTIONS.find((o) => o.key === sortKey) || SORT_OPTIONS[0];
+    const mul = sortDir === "asc" ? 1 : -1;
+    return [...decks].sort((a, b) => {
+        const av = opt.get(a);
+        const bv = opt.get(b);
+        if (av == null && bv == null) return 0;
+        if (av == null) return 1; // nulls last
+        if (bv == null) return -1;
+        return (av - bv) * mul;
+    });
+}
 
 function readOverlayPref(tag) {
     if (!tag) return false;
@@ -30,6 +54,9 @@ export default class TopDecks extends Component {
         playerError: null,
         overlayOn: readOverlayPref(getPlayerTag()),
         tag: getPlayerTag(),
+        sortKey: "players",
+        sortDir: "desc",
+        playableOnly: false,
     };
 
     async componentDidMount() {
@@ -111,6 +138,70 @@ export default class TopDecks extends Component {
         return map;
     }
 
+    renderSortControls(canFilterPlayable) {
+        const { sortKey, sortDir, playableOnly } = this.state;
+        return (
+            <div className="d-flex flex-wrap align-items-end gap-3 mb-3">
+                <div>
+                    <label className="form-label text-white small mb-1">
+                        Sort by
+                    </label>
+                    <select
+                        className="form-select form-select-sm"
+                        value={sortKey}
+                        onChange={(e) =>
+                            this.setState({ sortKey: e.target.value })
+                        }
+                    >
+                        {SORT_OPTIONS.map((o) => (
+                            <option key={o.key} value={o.key}>
+                                {o.label}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+                <div>
+                    <label className="form-label text-white small mb-1">
+                        Order
+                    </label>
+                    <select
+                        className="form-select form-select-sm"
+                        value={sortDir}
+                        onChange={(e) =>
+                            this.setState({ sortDir: e.target.value })
+                        }
+                    >
+                        <option value="desc">Descending</option>
+                        <option value="asc">Ascending</option>
+                    </select>
+                </div>
+                <div className="form-check text-white pb-1">
+                    <input
+                        className="form-check-input"
+                        type="checkbox"
+                        id="playableOnly"
+                        checked={playableOnly}
+                        disabled={!canFilterPlayable}
+                        onChange={(e) =>
+                            this.setState({ playableOnly: e.target.checked })
+                        }
+                    />
+                    <label
+                        className="form-check-label"
+                        htmlFor="playableOnly"
+                    >
+                        Only playable decks
+                        {!canFilterPlayable && (
+                            <span className="text-muted ms-1">
+                                (set a player tag)
+                            </span>
+                        )}
+                    </label>
+                </div>
+            </div>
+        );
+    }
+
     renderControls() {
         const { tag, playerData, playerError, overlayOn } = this.state;
         if (!tag) return null;
@@ -152,14 +243,26 @@ export default class TopDecks extends Component {
                 <div className="text-center text-white">Loading API data...</div>
             );
         }
-        const decks = [...this.state.top_decks].sort(
-            (a, b) => b.count - a.count
-        );
-        const ownership = this.state.overlayOn ? this.buildOwnershipMap() : null;
+        const { sortKey, sortDir, playableOnly } = this.state;
+        const ownedMap = this.buildOwnershipMap();
+        const ownership = this.state.overlayOn ? ownedMap : null;
+
+        let decks = this.state.top_decks;
+        if (playableOnly && ownedMap) {
+            decks = decks.filter((d) =>
+                d.cards.every((c) => ownedMap[c.name])
+            );
+        }
+        decks = sortDecks(decks, sortKey, sortDir);
+
         return (
             <div>
+                {this.renderSortControls(!!ownedMap)}
                 {this.renderControls()}
-                {decks.map((deck, idx) => (
+                {decks.length === 0 ? (
+                    <div className="text-white">No decks match these filters.</div>
+                ) : (
+                decks.map((deck, idx) => (
                     <div key={idx} className="mb-5 text-white">
                         <div className="mb-2">
                             <span className="fw-bold">Deck #{idx + 1}</span>
@@ -192,7 +295,7 @@ export default class TopDecks extends Component {
                         </div>
                         <hr className="mt-4" />
                     </div>
-                ))}
+                )))}
             </div>
         );
     }
