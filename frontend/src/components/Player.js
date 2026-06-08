@@ -1,13 +1,18 @@
 import React, { Component } from "react";
-import { useParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import Deck from "./Deck";
 import DeckStats from "./DeckStats";
-import { encodePlayerTag } from "../utils/playerTag";
+import {
+    encodePlayerTag,
+    getPlayerTag,
+    subscribePlayerTag,
+} from "../utils/playerTag";
 
 function withParams(Component) {
     return function Wrapped(props) {
         const params = useParams();
-        return <Component {...props} params={params} />;
+        const navigate = useNavigate();
+        return <Component {...props} params={params} navigate={navigate} />;
     };
 }
 
@@ -16,6 +21,20 @@ class Player extends Component {
 
     componentDidMount() {
         this.load();
+        // The navbar input updates the tag via an event, not the URL. Keep the
+        // route in sync so a new tag reloads this page instead of going stale.
+        this.unsubscribe = subscribePlayerTag(() => {
+            const tag = getPlayerTag();
+            if (!tag) {
+                this.props.navigate("/");
+            } else if (tag !== this.props.params.tag) {
+                this.props.navigate(`/player/${encodePlayerTag(tag)}`);
+            }
+        });
+    }
+
+    componentWillUnmount() {
+        if (this.unsubscribe) this.unsubscribe();
     }
 
     componentDidUpdate(prev) {
