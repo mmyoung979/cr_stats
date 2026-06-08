@@ -1,6 +1,10 @@
 import React from "react";
 import { isVariantUnlocked } from "../utils/variants";
 
+// Displayed in-game level cap; keep in sync with MAX_DISPLAYED_LEVEL in
+// backend/apis/player.py. Max-level cards get a gold badge.
+const MAX_LEVEL = 16;
+
 // activeForm is set explicitly by the backend's hydrate_deck:
 // "evolution" → use evolvedIcon, "hero" → use heroIcon,
 // "champion" or null → use the regular icon (champion's regular icon
@@ -31,8 +35,14 @@ function ownershipBadge(card, ownership) {
             </span>
         );
     }
+    const isMaxLevel = info.level >= MAX_LEVEL;
     return (
-        <span className="badge bg-dark position-absolute top-0 end-0 m-1">
+        <span
+            className={`badge position-absolute top-0 end-0 m-1 ${
+                isMaxLevel ? "text-dark" : "bg-dark"
+            }`}
+            style={isMaxLevel ? { backgroundColor: "#ffd700" } : undefined}
+        >
             {info.level}
         </span>
     );

@@ -14,7 +14,8 @@ def pick_recommended_decks(
 
     Returns the top `limit` decks ranked by:
        (1) fully playable (all required variants also unlocked) first,
-       (2) then by count descending.
+       (2) then by average card level descending,
+       (3) then by count (popularity) descending.
 
     Each result is the input dict augmented with:
       - avg_level, fully_playable, missing_variants
@@ -51,5 +52,7 @@ def pick_recommended_decks(
             "fully_playable": not missing,
             "missing_variants": missing,
         })
-    annotated.sort(key=lambda d: (not d["fully_playable"], -d["count"]))
+    annotated.sort(
+        key=lambda d: (not d["fully_playable"], -d["avg_level"], -d["count"])
+    )
     return annotated[:limit]

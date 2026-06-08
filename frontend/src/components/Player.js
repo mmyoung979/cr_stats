@@ -63,6 +63,16 @@ class Player extends Component {
             );
         }
         const { identity, recommended_decks } = data;
+        // Per-card level badges: Deck reads { [name]: { level, evolutionLevel } }.
+        // Every recommended-deck card is owned, so badges show the level (or
+        // "no evo/hero" for a locked variant).
+        const ownership = {};
+        for (const c of data.cards || []) {
+            ownership[c.name] = {
+                level: c.level,
+                evolutionLevel: c.evolutionLevel,
+            };
+        }
         return (
             <div className="text-white">
                 <div className="mb-4">
@@ -101,7 +111,7 @@ class Player extends Component {
                                                 .join(", ")}
                                         </div>
                                     )}
-                                    <Deck cards={deck.cards} />
+                                    <Deck cards={deck.cards} ownership={ownership} />
                                 </div>
                                 <div className="col-md-3">
                                     <DeckStats cards={deck.cards} />
