@@ -30,7 +30,7 @@ function ownershipBadge(card, ownership) {
     if (variant && variant !== "champion"
         && !isVariantUnlocked(info.evolutionLevel, variant)) {
         return (
-            <span className="badge bg-warning text-dark position-absolute top-0 end-0 m-1">
+            <span className="badge bg-secondary position-absolute top-0 end-0 m-1">
                 no {variant === "hero" ? "hero" : "evo"}
             </span>
         );
