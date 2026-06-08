@@ -171,9 +171,14 @@ export default class TopDecks extends Component {
                         <div className="row">
                             <div className="col-md-9">
                                 <Deck cards={deck.cards} ownership={ownership} />
-                                <div className="text-muted small mt-2">
-                                    {deck.players.join(", ")}
-                                </div>
+                                <details className="mt-2">
+                                    <summary className="text-muted small">
+                                        Players ({deck.players.length})
+                                    </summary>
+                                    <div className="text-muted small mt-1">
+                                        {deck.players.join(", ")}
+                                    </div>
+                                </details>
                             </div>
                             <div className="col-md-3">
                                 <DeckStats cards={deck.cards} />
