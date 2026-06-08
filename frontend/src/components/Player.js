@@ -100,6 +100,12 @@ class Player extends Component {
                                 <span className="text-muted ms-2">
                                     · avg level {deck.avg_level}
                                 </span>
+                                {deck.winRate != null && (
+                                    <span className="text-muted ms-2">
+                                        · {deck.wins}W&ndash;{deck.losses}L (
+                                        {deck.winRate}% win)
+                                    </span>
+                                )}
                             </div>
                             <div className="row">
                                 <div className="col-md-9">

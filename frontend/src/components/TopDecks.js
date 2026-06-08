@@ -167,6 +167,12 @@ export default class TopDecks extends Component {
                                 used by {deck.count} top{" "}
                                 {deck.count === 1 ? "player" : "players"}
                             </span>
+                            {deck.winRate != null && (
+                                <span className="text-muted ms-2">
+                                    · {deck.wins}W&ndash;{deck.losses}L (
+                                    {deck.winRate}% win)
+                                </span>
+                            )}
                         </div>
                         <div className="row">
                             <div className="col-md-9">

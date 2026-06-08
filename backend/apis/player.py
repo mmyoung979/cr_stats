@@ -22,7 +22,9 @@ MAX_DISPLAYED_LEVEL = 16
 CANDIDATES_QUERY = """
 SELECT
     d.id, d.hash, d.card_ids, d.evo_card_ids, d.hero_card_ids,
-    COUNT(DISTINCT b.team_tag) AS count
+    COUNT(DISTINCT b.team_tag) AS count,
+    COUNT(*) FILTER (WHERE b.team_crowns > b.opp_crowns) AS wins,
+    COUNT(*) FILTER (WHERE b.team_crowns < b.opp_crowns) AS losses
 FROM battles b
 JOIN decks d ON d.id = b.team_deck_id
 WHERE b.timestamp > %s
@@ -95,7 +97,8 @@ class Player(Resource):
                 else:
                     cards_by_id = {}
 
-        for deck_id, deck_hash, card_ids, evo_card_ids, hero_card_ids, count in deck_rows:
+        for (deck_id, deck_hash, card_ids, evo_card_ids, hero_card_ids,
+             count, wins, losses) in deck_rows:
             deck_dict = {
                 "card_ids": card_ids,
                 "evo_card_ids": evo_card_ids,
@@ -108,10 +111,15 @@ class Player(Resource):
             id_by_name = {cards_by_id[cid]["name"]: cid for cid in card_ids if cid in cards_by_id}
             for c in hydrated_cards:
                 c["id"] = id_by_name.get(c["name"])
+            decided = wins + losses
             candidates.append({
                 "id": deck_id,
                 "hash": deck_hash,
                 "count": count,
+                "wins": wins,
+                "losses": losses,
+                # Win rate over decided battles (draws excluded); None if none.
+                "winRate": round(100 * wins / decided, 1) if decided else None,
                 "card_ids": card_ids,
                 "evo_card_ids": evo_card_ids,
                 "hero_card_ids": hero_card_ids,

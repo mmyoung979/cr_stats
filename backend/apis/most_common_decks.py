@@ -14,7 +14,9 @@ DECKS_QUERY = """
 SELECT
     d.id, d.card_ids, d.evo_card_ids, d.hero_card_ids,
     COUNT(DISTINCT b.team_tag) AS count,
-    array_agg(DISTINCT b.team_tag) AS player_tags
+    array_agg(DISTINCT b.team_tag) AS player_tags,
+    COUNT(*) FILTER (WHERE b.team_crowns > b.opp_crowns) AS wins,
+    COUNT(*) FILTER (WHERE b.team_crowns < b.opp_crowns) AS losses
 FROM battles b
 JOIN decks d ON d.id = b.team_deck_id
 WHERE b.timestamp > %s
@@ -56,15 +58,21 @@ class MostCommonDecks(Resource):
                     cards_by_id = {}
 
         result = []
-        for deck_id, card_ids, evo_card_ids, hero_card_ids, count, player_tags in deck_rows:
+        for (deck_id, card_ids, evo_card_ids, hero_card_ids, count,
+             player_tags, wins, losses) in deck_rows:
             deck_dict = {
                 "card_ids": card_ids,
                 "evo_card_ids": evo_card_ids,
                 "hero_card_ids": hero_card_ids,
             }
+            decided = wins + losses
             result.append({
                 "count": count,
                 "cards": hydrate_deck(deck_dict, cards_by_id),
                 "players": player_tags or [],
+                "wins": wins,
+                "losses": losses,
+                # Win rate over decided battles (draws excluded); None if none.
+                "winRate": round(100 * wins / decided, 1) if decided else None,
             })
         return result
